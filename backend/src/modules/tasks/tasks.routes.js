@@ -71,6 +71,71 @@ tasksRouter.get('/:id', (req, res) => {
   return res.json({ data: task });
 });
 
+// Get Task Activity & Submission Audit Log History
+tasksRouter.get('/:id/activity', (req, res) => {
+  const task = db.getTaskById(req.params.id, req.orgId);
+  if (!task) {
+    return res.status(404).json({
+      error: { code: 'TASK_NOT_FOUND', message: `Task ${req.params.id} does not exist in current tenant scope` },
+    });
+  }
+  const logs = db.getTaskActivityLogs(req.params.id, req.orgId);
+  return res.json({ data: logs });
+});
+
+// Submit Work Log or Progress Submission on Task
+tasksRouter.post(
+  '/:id/activity',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager', 'team_member'),
+  async (req, res) => {
+    const taskId = req.params.id;
+    const task = db.getTaskById(taskId, req.orgId);
+    if (!task) {
+      return res.status(404).json({
+        error: { code: 'TASK_NOT_FOUND', message: `Task ${taskId} not found` },
+      });
+    }
+
+    const { note, status, hoursSpent } = req.body;
+    if (!note || !note.trim()) {
+      return res.status(400).json({ error: { message: 'Submission work note is required' } });
+    }
+
+    let updatedTask = task;
+    const updates = {};
+    if (status && status !== task.status) updates.status = status;
+    if (hoursSpent && Number(hoursSpent) > 0) {
+      updates.actualHours = (Number(task.actualHours) || 0) + Number(hoursSpent);
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const updateResult = db.updateTaskWithOCC(taskId, req.orgId, updates, task.version, req.user.id);
+      if (updateResult.success) {
+        updatedTask = updateResult.task;
+      }
+    }
+
+    const logEntry = db.logActivity({
+      orgId: req.orgId,
+      entityType: 'TASK',
+      entityId: taskId,
+      action: 'WORK_SUBMITTED',
+      performedBy: req.user.email || req.user.fullName || req.user.id,
+      payload: {
+        note: note.trim(),
+        status: updatedTask.status,
+        version: updatedTask.version,
+        hoursLogged: hoursSpent || 0,
+      },
+    });
+
+    // Real-time broadcast
+    realtimeBus.broadcast(req.orgId, 'TASK_ACTIVITY', { taskId, log: logEntry, task: updatedTask });
+
+    return res.status(201).json({ data: logEntry, task: updatedTask });
+  }
+);
+
 // Create Task
 tasksRouter.post(
   '/',

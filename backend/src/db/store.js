@@ -116,7 +116,7 @@ export class DatabaseStore {
       projectId: projAlpha.id,
       orgId: 'org-acme-101',
       title: 'Database Sharding & Connection Pool Tuning',
-      description: 'Configure PgBouncer with maximum 500 connections.',
+      description: 'Configure PgBouncer with maximum 500 connections for resilient throughput.',
       status: 'IN_PROGRESS',
       priority: 'HIGH',
       assigneeId: 'usr-member-1',
@@ -125,10 +125,125 @@ export class DatabaseStore {
       estimatedHours: 16.0,
       actualHours: 4.5,
       version: 1, // OCC version counter
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
       updatedAt: new Date().toISOString(),
     };
     this.tasks.set(taskOccTarget.id, taskOccTarget);
+
+    const task101 = {
+      id: 'task-101',
+      projectId: projAlpha.id,
+      orgId: 'org-acme-101',
+      title: 'REST & Server-Sent Events (SSE) Streaming Pipeline',
+      description: 'Production event streaming hub for real-time task mutations and analytics feeds.',
+      status: 'DONE',
+      priority: 'HIGH',
+      assigneeId: 'usr-member-1',
+      creatorId: 'usr-pm-1',
+      dueDate: new Date(Date.now() - 86400000).toISOString(),
+      estimatedHours: 12.0,
+      actualHours: 10.0,
+      version: 2,
+      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+    };
+    this.tasks.set(task101.id, task101);
+
+    const task102 = {
+      id: 'task-102',
+      projectId: projAlpha.id,
+      orgId: 'org-acme-101',
+      title: 'Optimistic Concurrency Control (OCC) Architecture',
+      description: 'Enforce atomic version checks (expectedVersion === current.version) to reject silent overwrites.',
+      status: 'IN_PROGRESS',
+      priority: 'URGENT',
+      assigneeId: 'usr-pm-1',
+      creatorId: 'usr-pm-1',
+      dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+      estimatedHours: 20.0,
+      actualHours: 14.0,
+      version: 3,
+      createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.tasks.set(task102.id, task102);
+
+    const task103 = {
+      id: 'task-103',
+      projectId: projAlpha.id,
+      orgId: 'org-acme-101',
+      title: 'HMAC Webhook Ingestion & Replay Protection',
+      description: 'Verify SHA256 HMAC signatures with 300-second timestamp tolerance and Redis deduplication.',
+      status: 'TODO',
+      priority: 'MEDIUM',
+      assigneeId: 'usr-member-1',
+      creatorId: 'usr-owner-1',
+      dueDate: new Date(Date.now() + 86400000 * 7).toISOString(),
+      estimatedHours: 8.0,
+      actualHours: 0.0,
+      version: 1,
+      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    };
+    this.tasks.set(task103.id, task103);
+
+    // Initial Audit Logs for Seeded Tasks
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: taskOccTarget.id,
+      action: 'CREATED',
+      performedBy: 'usr-pm-1',
+      payload: { title: taskOccTarget.title, status: 'IN_PROGRESS', version: 1, note: 'Task submitted for sprint execution.' },
+    });
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: task101.id,
+      action: 'CREATED',
+      performedBy: 'usr-pm-1',
+      payload: { title: task101.title, status: 'TODO', version: 1 },
+    });
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: task101.id,
+      action: 'UPDATED',
+      performedBy: 'usr-member-1',
+      payload: { status: 'DONE', version: 2, note: 'Implementation verified and deployed to staging.' },
+    });
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: task102.id,
+      action: 'CREATED',
+      performedBy: 'usr-pm-1',
+      payload: { title: task102.title, status: 'TODO', version: 1 },
+    });
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: task102.id,
+      action: 'UPDATED',
+      performedBy: 'usr-pm-1',
+      payload: { status: 'IN_PROGRESS', version: 2, updatedFields: ['status', 'estimatedHours'] },
+    });
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: task102.id,
+      action: 'OCC_CONFLICT_DETECTED',
+      performedBy: 'usr-member-1',
+      payload: { attemptedVersion: 1, currentVersion: 2, note: 'Simulated collision caught by OCC engine' },
+    });
+    this.logActivity({
+      orgId: 'org-acme-101',
+      entityType: 'TASK',
+      entityId: task103.id,
+      action: 'CREATED',
+      performedBy: 'usr-owner-1',
+      payload: { title: task103.title, status: 'TODO', version: 1, note: 'Task created from security compliance audit.' },
+    });
 
     // Append Initial Audit Log
     this.logActivity({
@@ -518,6 +633,12 @@ export class DatabaseStore {
     return this.activityLogs
       .filter((l) => l.orgId === orgId)
       .slice(-limit)
+      .reverse();
+  }
+
+  getTaskActivityLogs(taskId, orgId) {
+    return this.activityLogs
+      .filter((l) => (!orgId || l.orgId === orgId) && l.entityType === 'TASK' && l.entityId === taskId)
       .reverse();
   }
 

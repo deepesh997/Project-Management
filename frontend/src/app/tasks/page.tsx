@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { ConflictResolutionModal } from '../../components/tasks/ConflictResolutionModal';
+import { TaskDetailDrawer } from '../../components/tasks/TaskDetailDrawer';
 import { ApiClient } from '../../lib/api';
 import { Task, Project, OCCConflictError, TaskStatus, TaskPriority } from '../../types';
 
@@ -518,135 +519,27 @@ export default function TasksPage() {
             </div>
           )}
 
-          {/* Quick Edit Task Sheet / Modal */}
+          {/* Task Detail & Submission History Drawer */}
           {editingTask && (
-            <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-apple-sheet max-w-lg w-full p-6 space-y-5 border border-black/10 animate-in fade-in zoom-in-95 duration-150">
-                <div className="flex justify-between items-center border-b border-black/[0.08] pb-3.5">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold text-base text-[#1D1D1F]">
-                      Edit Task Details
-                    </h3>
-                    <span className="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 font-mono font-semibold rounded border border-blue-200">
-                      v{editingTask.version}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setEditingTask(null)}
-                    className="text-[#8E8E93] hover:text-[#1D1D1F] w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/[0.05] transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-4 text-xs">
-                  <div>
-                    <label className="font-semibold text-[#1D1D1F] block mb-1">
-                      Task Title
-                    </label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-semibold text-[#1D1D1F] block mb-1">
-                        Workflow Status
-                      </label>
-                      <select
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value as TaskStatus)}
-                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                      >
-                        <option value="TODO">To Do</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="DONE">Completed</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-[#1D1D1F] block mb-1">
-                        Priority Level
-                      </label>
-                      <select
-                        value={editPriority}
-                        onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
-                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                      >
-                        <option value="LOW">Low</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="HIGH">High</option>
-                        <option value="URGENT">P0 Critical</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-[#1D1D1F] block mb-1">
-                      Description & Scope
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                    ></textarea>
-                  </div>
-
-                  {/* Concurrency Simulation Box */}
-                  <div className="bg-amber-50/70 p-3 rounded-[10px] border border-amber-200 text-xs text-amber-900 space-y-1">
-                    <div className="font-semibold flex items-center space-x-1.5">
-                      <span>⚡</span>
-                      <span>Test Concurrency Protection:</span>
-                    </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Click <strong>Simulate Race Collision</strong> to trigger a 409 conflict where another collaborator modified the record simultaneously.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-black/[0.08]">
-                  <div className="space-x-2">
-                    <button
-                      type="button"
-                      onClick={handleSimulateRaceCondition}
-                      className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-[8px] text-xs font-semibold transition-colors active:scale-[0.98]"
-                    >
-                      Simulate Race (409)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDeleteTask}
-                      className="px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-[8px] transition-colors"
-                    >
-                      Delete Task
-                    </button>
-                  </div>
-
-                  <div className="space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditingTask(null)}
-                      className="px-3.5 py-1.5 text-xs text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-black/[0.04] rounded-[8px] transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={handleSaveEdit}
-                      className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
-                    >
-                      {isSaving ? 'Saving...' : `Save Changes (v${editingTask.version})`}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TaskDetailDrawer
+              task={editingTask}
+              onClose={() => setEditingTask(null)}
+              onTaskUpdated={(updatedTask) => {
+                setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+                setEditingTask(updatedTask);
+              }}
+              onTaskDeleted={async (taskId) => {
+                if (!confirm('Are you sure you want to delete this task?')) return;
+                const ok = await ApiClient.deleteTask(taskId);
+                if (ok) {
+                  setTasks((prev) => prev.filter((t) => t.id !== taskId));
+                  setEditingTask(null);
+                  showToast('Task deleted successfully');
+                }
+              }}
+              onConflict={(err) => setConflict(err)}
+              showToast={showToast}
+            />
           )}
 
           {/* OCC Conflict Resolution Modal */}

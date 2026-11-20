@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../../lib/auth-context';
+import { useSidebar } from '../../lib/sidebar-context';
 import { UserRole } from '../../types';
 
 const roleLabels: Record<UserRole, { label: string; color: string }> = {
@@ -14,6 +15,7 @@ const roleLabels: Record<UserRole, { label: string; color: string }> = {
 
 export function Topbar() {
   const { user } = useAuth();
+  const { isCollapsed, toggleSidebar } = useSidebar();
   const currentRole: UserRole = user?.role || 'team_member';
   const badge = roleLabels[currentRole] || roleLabels.team_member;
 
@@ -28,9 +30,21 @@ export function Topbar() {
   };
 
   return (
-    <header className="h-14 bg-white/80 backdrop-blur-xl border-b border-black/[0.08] px-6 flex items-center justify-between sticky top-0 z-30 select-none">
+    <header className="h-14 bg-white/80 backdrop-blur-xl border-b border-black/[0.08] px-5 flex items-center justify-between sticky top-0 z-30 select-none">
       {/* Leading Edge: Organization Title & Context */}
       <div className="flex items-center space-x-3">
+        {/* Apple HIG Sidebar Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          title={isCollapsed ? 'Expand Sidebar (⌘B)' : 'Collapse Sidebar (⌘B)'}
+          className="p-1.5 rounded-[7px] text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-black/[0.05] active:scale-95 transition-all flex items-center justify-center"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+        </button>
+
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 rounded-full bg-[#007AFF]"></div>
           <h1 className="text-sm font-semibold text-[#1D1D1F] tracking-tight">

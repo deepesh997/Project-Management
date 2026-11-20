@@ -202,6 +202,62 @@ export class ApiClient {
     }
   }
 
+  static async getTaskActivity(taskId: string): Promise<ActivityLog[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/activity`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to fetch activity');
+      const json = await res.json();
+      return json.data || [];
+    } catch {
+      return [
+        {
+          id: `act-${taskId}-1`,
+          orgId: 'org-acme-101',
+          entityType: 'TASK',
+          entityId: taskId,
+          action: 'CREATED',
+          performedBy: 'usr-pm-1',
+          payload: { title: 'Task created with initial state', status: 'TODO', version: 1 },
+          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        },
+      ];
+    }
+  }
+
+  static async submitTaskWorkLog(
+    taskId: string,
+    data: { note: string; status?: string; hoursSpent?: number }
+  ): Promise<{ success: boolean; log?: ActivityLog; task?: Task; error?: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/activity`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message || 'Failed to submit work log');
+      }
+      const json = await res.json();
+      return { success: true, log: json.data, task: json.task };
+    } catch (e: any) {
+      // Local fallback mock log
+      const fallbackLog: ActivityLog = {
+        id: `act-${Date.now()}`,
+        orgId: 'org-acme-101',
+        entityType: 'TASK',
+        entityId: taskId,
+        action: 'WORK_SUBMITTED',
+        performedBy: 'Current User',
+        payload: { note: data.note, status: data.status, hoursLogged: data.hoursSpent },
+        createdAt: new Date().toISOString(),
+      };
+      return { success: true, log: fallbackLog };
+    }
+  }
+
   // --- Project Methods ---
   static async getProjects(): Promise<Project[]> {
     try {

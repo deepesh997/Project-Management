@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
+import { useSidebar } from '../../lib/sidebar-context';
 import { UserRole } from '../../types';
 
 const roleLabels: Record<UserRole, { label: string; badgeClass: string; dotColor: string }> = {
@@ -28,6 +29,7 @@ interface NavSection {
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { isCollapsed, toggleSidebar } = useSidebar();
 
   const currentRole: UserRole = user?.role || 'team_member';
   const roleInfo = roleLabels[currentRole] || roleLabels.team_member;
@@ -41,7 +43,7 @@ export function Sidebar() {
           href: '/',
           roles: ['platform_admin', 'org_owner', 'project_manager', 'team_member', 'auditor'],
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7" rx="1.5" />
               <rect x="14" y="3" width="7" height="7" rx="1.5" />
               <rect x="14" y="14" width="7" height="7" rx="1.5" />
@@ -55,7 +57,7 @@ export function Sidebar() {
           roles: ['platform_admin', 'org_owner', 'project_manager', 'team_member'],
           badge: 'OCC',
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 6h16M4 12h10M4 18h14" />
               <rect x="2" y="3" width="20" height="18" rx="3" />
             </svg>
@@ -71,7 +73,7 @@ export function Sidebar() {
           href: '/projects',
           roles: ['platform_admin', 'org_owner', 'project_manager'],
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
           ),
@@ -81,7 +83,7 @@ export function Sidebar() {
           href: '/team',
           roles: ['platform_admin', 'org_owner', 'project_manager'],
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -100,7 +102,7 @@ export function Sidebar() {
           roles: ['platform_admin', 'org_owner', 'project_manager'],
           badge: 'Stream',
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10" />
               <line x1="12" y1="20" x2="12" y2="4" />
               <line x1="6" y1="20" x2="6" y2="14" />
@@ -112,7 +114,7 @@ export function Sidebar() {
           href: '/audit',
           roles: ['platform_admin', 'org_owner', 'auditor'],
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="m9 12 2 2 4-4" />
             </svg>
@@ -123,7 +125,7 @@ export function Sidebar() {
           href: '/settings',
           roles: ['platform_admin', 'org_owner'],
           icon: (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
@@ -144,30 +146,65 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-[#1C1C1E] text-white/90 flex flex-col border-r border-white/10 shrink-0 select-none">
+    <aside
+      className={`bg-[#1C1C1E] text-white/90 flex flex-col border-r border-white/10 shrink-0 select-none transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-[68px]' : 'w-64'
+      }`}
+    >
       {/* Brand Header */}
-      <div className="h-14 px-4 flex items-center justify-between border-b border-white/[0.08]">
-        <Link href="/" className="flex items-center space-x-2.5 group">
-          <div className="w-7 h-7 rounded-[8px] bg-gradient-to-b from-[#007AFF] to-[#0062CC] flex items-center justify-center font-bold text-white text-xs shadow-sm shadow-blue-500/30 border border-white/20">
+      <div
+        className={`h-14 flex items-center border-b border-white/[0.08] transition-all duration-300 ${
+          isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+        }`}
+      >
+        <Link href="/" className="flex items-center space-x-2.5 group overflow-hidden">
+          <div className="w-7 h-7 rounded-[8px] bg-gradient-to-b from-[#007AFF] to-[#0062CC] flex items-center justify-center font-bold text-white text-xs shadow-sm shadow-blue-500/30 border border-white/20 shrink-0">
             WS
           </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-sm tracking-tight text-white group-hover:text-blue-400 transition-colors">
-              WorkSphere
-            </span>
-            <span className="text-[10px] text-white/50 tracking-normal font-mono -mt-0.5">
-              Enterprise Pro
-            </span>
-          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col truncate">
+              <span className="font-semibold text-sm tracking-tight text-white group-hover:text-blue-400 transition-colors truncate">
+                WorkSphere
+              </span>
+              <span className="text-[10px] text-white/50 tracking-normal font-mono -mt-0.5 truncate">
+                Enterprise Pro
+              </span>
+            </div>
+          )}
         </Link>
-        <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] bg-white/10 text-white/70 font-mono font-medium border border-white/10">
-          v1.4
-        </span>
+
+        {/* Sidebar Toggle Action */}
+        {!isCollapsed ? (
+          <div className="flex items-center space-x-1.5">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] bg-white/10 text-white/70 font-mono font-medium border border-white/10">
+              v1.4
+            </span>
+            <button
+              onClick={toggleSidebar}
+              title="Collapse Sidebar (⌘B)"
+              className="w-6 h-6 rounded-[6px] text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <path d="m14 9-3 3 3 3" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={toggleSidebar}
+            title="Expand Sidebar (⌘B)"
+            className="hidden group-hover:flex absolute right-[-10px] top-4 w-5 h-5 rounded-full bg-[#007AFF] text-white items-center justify-center shadow-md text-xs hover:scale-110 transition-transform z-30"
+          >
+            ›
+          </button>
+        )}
       </div>
 
       {/* Navigation Sections */}
-      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
-        {navSections.map((section) => {
+      <nav className="flex-1 px-2.5 py-4 space-y-4 overflow-y-auto overflow-x-hidden">
+        {navSections.map((section, sIdx) => {
           const visibleItems = section.items.filter(
             (item) => currentRole === 'platform_admin' || item.roles.includes(currentRole)
           );
@@ -175,9 +212,14 @@ export function Sidebar() {
 
           return (
             <div key={section.title} className="space-y-1">
-              <div className="px-2.5 text-[11px] font-semibold text-white/40 uppercase tracking-wider">
-                {section.title}
-              </div>
+              {!isCollapsed ? (
+                <div className="px-2.5 text-[11px] font-semibold text-white/40 uppercase tracking-wider">
+                  {section.title}
+                </div>
+              ) : sIdx > 0 ? (
+                <div className="w-6 h-px bg-white/10 my-2 mx-auto" />
+              ) : null}
+
               <div className="space-y-0.5">
                 {visibleItems.map((item) => {
                   const isActive = pathname === item.href;
@@ -185,7 +227,10 @@ export function Sidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center justify-between px-2.5 py-1.5 text-xs font-medium rounded-[8px] transition-all duration-150 ${
+                      title={isCollapsed ? item.label : undefined}
+                      className={`flex items-center rounded-[8px] transition-all duration-150 relative ${
+                        isCollapsed ? 'justify-center p-2' : 'justify-between px-2.5 py-1.5'
+                      } ${
                         isActive
                           ? 'bg-[#007AFF] text-white shadow-sm'
                           : 'text-white/75 hover:bg-white/[0.08] hover:text-white'
@@ -195,9 +240,10 @@ export function Sidebar() {
                         <span className={isActive ? 'text-white' : 'text-white/60'}>
                           {item.icon}
                         </span>
-                        <span>{item.label}</span>
+                        {!isCollapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
                       </div>
-                      {item.badge && (
+
+                      {!isCollapsed && item.badge && (
                         <span
                           className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-semibold uppercase ${
                             isActive
@@ -207,6 +253,10 @@ export function Sidebar() {
                         >
                           {item.badge}
                         </span>
+                      )}
+
+                      {isCollapsed && item.badge && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] absolute top-1.5 right-1.5" />
                       )}
                     </Link>
                   );
@@ -218,40 +268,65 @@ export function Sidebar() {
       </nav>
 
       {/* Authenticated User Profile Capsule */}
-      <div className="p-3 border-t border-white/[0.08] bg-black/20 space-y-2.5">
-        <div className="flex items-center space-x-2.5 px-1">
-          <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 text-[#30B0C7] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-            {getInitials(user?.fullName)}
-          </div>
-          <div className="overflow-hidden flex-1 min-w-0">
-            <div className="text-xs font-semibold text-white truncate">
-              {user?.fullName || 'Authenticated User'}
+      <div className="p-2.5 border-t border-white/[0.08] bg-black/20">
+        {!isCollapsed ? (
+          <div className="space-y-2.5">
+            <div className="flex items-center space-x-2.5 px-1">
+              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 text-[#30B0C7] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                {getInitials(user?.fullName)}
+              </div>
+              <div className="overflow-hidden flex-1 min-w-0">
+                <div className="text-xs font-semibold text-white truncate">
+                  {user?.fullName || 'Authenticated User'}
+                </div>
+                <div className="text-[10px] text-white/50 truncate font-mono">
+                  {user?.email || 'user@acme.com'}
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] text-white/50 truncate font-mono">
-              {user?.email || 'user@acme.com'}
+
+            <div className="flex items-center justify-between px-1 pt-1">
+              <div className="flex items-center space-x-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${roleInfo.dotColor}`}></span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-[4px] border font-medium ${roleInfo.badgeClass}`}>
+                  {roleInfo.label}
+                </span>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline font-medium transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+
+            <div className="text-[10px] text-white/40 flex items-center justify-between px-1 pt-1.5 border-t border-white/[0.06]">
+              <span>Tenant Scope:</span>
+              <span className="font-mono text-blue-400 font-semibold">{user?.orgId || 'org-acme-101'}</span>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between px-1 pt-1">
-          <div className="flex items-center space-x-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${roleInfo.dotColor}`}></span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-[4px] border font-medium ${roleInfo.badgeClass}`}>
-              {roleInfo.label}
-            </span>
+        ) : (
+          <div className="flex flex-col items-center space-y-2 py-1">
+            <div
+              title={`${user?.fullName || 'User'} (${roleInfo.label})`}
+              className="w-8 h-8 rounded-full bg-white/10 border border-white/20 text-[#30B0C7] flex items-center justify-center font-bold text-xs shadow-sm relative cursor-pointer"
+            >
+              {getInitials(user?.fullName)}
+              <span className={`w-2 h-2 rounded-full ${roleInfo.dotColor} absolute -bottom-0.5 -right-0.5 border border-[#1C1C1E]`}></span>
+            </div>
+            <button
+              onClick={() => logout()}
+              title="Sign Out"
+              className="w-7 h-7 rounded-[6px] text-rose-400 hover:bg-rose-500/20 flex items-center justify-center transition-colors text-xs"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => logout()}
-            className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline font-medium transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
-
-        <div className="text-[10px] text-white/40 flex items-center justify-between px-1 pt-1.5 border-t border-white/[0.06]">
-          <span>Tenant Scope:</span>
-          <span className="font-mono text-blue-400 font-semibold">{user?.orgId || 'org-acme-101'}</span>
-        </div>
+        )}
       </div>
     </aside>
   );
