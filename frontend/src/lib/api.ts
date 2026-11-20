@@ -1,4 +1,4 @@
-import type { Task, OCCConflictError, AnalyticsSummary, Project, ActivityLog } from '../types/index.ts';
+import type { Task, OCCConflictError, AnalyticsSummary, Project, ActivityLog } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 

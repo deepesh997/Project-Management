@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { useAuth } from '../../lib/auth-context';
-import { UserRole } from '../../types/index.ts';
+import { UserRole } from '../../types';
 
 interface Member {
   id: string;
@@ -25,12 +25,12 @@ interface Invitation {
   expiresAt: string;
 }
 
-const roleColors: Record<UserRole, string> = {
-  platform_admin: 'bg-rose-100 text-rose-800 border-rose-200',
-  org_owner: 'bg-purple-100 text-purple-800 border-purple-200',
-  project_manager: 'bg-blue-100 text-blue-800 border-blue-200',
-  team_member: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  auditor: 'bg-amber-100 text-amber-800 border-amber-200',
+const roleStyles: Record<UserRole, { label: string; badge: string }> = {
+  platform_admin: { label: 'Platform Admin', badge: 'bg-rose-50 text-rose-700 border-rose-200' },
+  org_owner: { label: 'Organization Owner', badge: 'bg-purple-50 text-purple-700 border-purple-200' },
+  project_manager: { label: 'Project Manager', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  team_member: { label: 'Team Member', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  auditor: { label: 'Compliance Auditor', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -60,7 +60,6 @@ export default function TeamPage() {
 
   const loadMembersAndInvites = async () => {
     try {
-      // 1. Fetch Members
       const membersRes = await fetch(`${API_BASE_URL}/organizations/${orgId}/members`, {
         headers: getHeaders(),
       });
@@ -68,7 +67,6 @@ export default function TeamPage() {
         const json = await membersRes.json();
         setMembers(json.data || []);
       } else {
-        // Fallback default fixture
         setMembers([
           { id: 'mem-1', userId: 'usr-owner-1', email: 'owner@acme.com', fullName: 'Elena Vance (Owner)', role: 'org_owner', isActive: true, joinedAt: '2026-11-01' },
           { id: 'mem-2', userId: 'usr-pm-1', email: 'pm@acme.com', fullName: 'Marcus Brody (PM)', role: 'project_manager', isActive: true, joinedAt: '2026-11-02' },
@@ -77,7 +75,6 @@ export default function TeamPage() {
         ]);
       }
 
-      // 2. Fetch Invitations
       const invitesRes = await fetch(`${API_BASE_URL}/organizations/${orgId}/invitations`, {
         headers: getHeaders(),
       });
@@ -86,7 +83,6 @@ export default function TeamPage() {
         setInvitations(json.data || []);
       }
     } catch {
-      // Fallback
       setMembers([
         { id: 'mem-1', userId: 'usr-owner-1', email: 'owner@acme.com', fullName: 'Elena Vance (Owner)', role: 'org_owner', isActive: true, joinedAt: '2026-11-01' },
         { id: 'mem-2', userId: 'usr-pm-1', email: 'pm@acme.com', fullName: 'Marcus Brody (PM)', role: 'project_manager', isActive: true, joinedAt: '2026-11-02' },
@@ -112,15 +108,15 @@ export default function TeamPage() {
 
       const json = await res.json();
       if (!res.ok) {
-        setNotification({ type: 'error', message: json.error?.message || 'Failed to send invitation' });
+        setNotification({ type: 'error', message: json.error?.message || 'Failed to dispatch invitation' });
       } else {
-        setNotification({ type: 'success', message: `Invitation dispatched to ${inviteEmail} (Job Enqueued)` });
+        setNotification({ type: 'success', message: `Invitation dispatched to ${inviteEmail} (Worker Job Enqueued)` });
         setInviteEmail('');
         setIsInviteModalOpen(false);
         loadMembersAndInvites();
       }
     } catch {
-      setNotification({ type: 'error', message: 'Network error connecting to backend' });
+      setNotification({ type: 'error', message: 'Network error connecting to API server' });
     } finally {
       setIsSubmitting(false);
     }
@@ -139,15 +135,15 @@ export default function TeamPage() {
         loadMembersAndInvites();
       } else {
         const err = await res.json();
-        setNotification({ type: 'error', message: err.error?.message || 'Role update rejected' });
+        setNotification({ type: 'error', message: err.error?.message || 'Role change rejected' });
       }
     } catch {
-      setNotification({ type: 'error', message: 'Network error' });
+      setNotification({ type: 'error', message: 'Network error connecting to API server' });
     }
   };
 
   const handleRemoveMember = async (targetUserId: string) => {
-    if (!confirm('Are you sure you want to remove this user from the organization?')) return;
+    if (!confirm('Are you sure you want to remove this collaborator from the organization?')) return;
 
     try {
       const res = await fetch(`${API_BASE_URL}/organizations/${orgId}/members/${targetUserId}`, {
@@ -182,19 +178,29 @@ export default function TeamPage() {
     }
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'WS';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
   if (!hasRole('org_owner', 'project_manager', 'platform_admin')) {
     return (
-      <div className="flex h-screen overflow-hidden bg-slate-50">
+      <div className="flex h-screen overflow-hidden bg-[#F5F5F7]">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-y-auto">
           <Topbar />
-          <main className="p-8 max-w-4xl mx-auto my-auto text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-2xl mx-auto">
+          <main className="p-8 max-w-md mx-auto my-auto text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xl mx-auto border border-rose-200">
               !
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">Access Restricted</h2>
-            <p className="text-sm text-slate-500 max-w-md mx-auto">
-              User Management & Team Onboarding is restricted to Organization Owners, Administrators, and Project Managers.
+            <h2 className="text-xl font-bold text-[#1D1D1F]">Access Restricted</h2>
+            <p className="text-xs text-[#6E6E73] leading-relaxed">
+              Team Member and User Management is restricted to Organization Owners, Administrators, and Project Managers.
             </p>
           </main>
         </div>
@@ -203,219 +209,230 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-[#F5F5F7]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <Topbar />
 
         <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
+          {/* Header Row */}
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">User Management & Organization Team</h2>
-              <p className="text-sm text-slate-500">
-                Tenant: <span className="font-mono text-indigo-600 font-semibold">{orgId}</span> • Role-Based Access Control (RBAC)
+            <div className="space-y-0.5">
+              <h2 className="text-xl font-bold text-[#1D1D1F] tracking-tight">
+                Team & User Management
+              </h2>
+              <p className="text-xs text-[#6E6E73]">
+                Tenant Scope: <span className="font-mono text-[#007AFF] font-semibold">{orgId}</span> • Role-Based Access Control (RBAC)
               </p>
             </div>
             {isOwnerOrAdmin && (
               <button
                 onClick={() => setIsInviteModalOpen(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center space-x-1.5"
+                className="px-3.5 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all flex items-center space-x-1.5"
               >
                 <span>+</span>
-                <span>Invite New Member</span>
+                <span>Invite Team Member</span>
               </button>
             )}
           </div>
 
           {notification && (
             <div
-              className={`p-4 rounded-lg text-sm flex justify-between items-center ${
+              className={`p-3.5 rounded-[10px] text-xs flex justify-between items-center shadow-xs ${
                 notification.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                  : 'bg-rose-50 text-rose-900 border border-rose-200'
               }`}
             >
               <span>{notification.message}</span>
-              <button onClick={() => setNotification(null)} className="font-bold ml-2">
+              <button onClick={() => setNotification(null)} className="font-bold text-xs ml-2">
                 ✕
               </button>
             </div>
           )}
 
           {/* Active Members Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-base">Active Organization Members</h3>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {members.length} Members
+          <div className="apple-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-sm text-[#1D1D1F]">Active Collaborators</h3>
+                <p className="text-[11px] text-[#6E6E73]">Team members with authorized workspace access</p>
+              </div>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-black/[0.04] text-[#6E6E73] font-mono">
+                {members.length} Total
               </span>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-xs border-b border-slate-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FBFBFD] text-[#86868B] uppercase text-[10px] font-semibold border-b border-black/[0.06] tracking-wider">
                   <tr>
                     <th className="py-3 px-6">Member</th>
-                    <th className="py-3 px-6">Email</th>
-                    <th className="py-3 px-6">Role</th>
+                    <th className="py-3 px-6">Assigned Role</th>
+                    <th className="py-3 px-6">Status</th>
                     <th className="py-3 px-6">Joined Date</th>
                     {isOwnerOrAdmin && <th className="py-3 px-6 text-right">Actions</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {members.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4 px-6 flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">
-                          {m.fullName.substring(0, 2).toUpperCase()}
-                        </div>
-                        <span className="font-semibold text-slate-900">{m.fullName}</span>
-                      </td>
-                      <td className="py-4 px-6 font-mono text-xs text-slate-600">{m.email}</td>
-                      <td className="py-4 px-6">
-                        {isOwnerOrAdmin && m.userId !== user?.id ? (
-                          <select
-                            value={m.role}
-                            onChange={(e) => handleRoleChange(m.userId, e.target.value as UserRole)}
-                            className="text-xs font-semibold rounded px-2 py-1 border border-slate-300 focus:ring-1 focus:ring-indigo-500 bg-white"
-                          >
-                            <option value="org_owner">Organization Owner</option>
-                            <option value="project_manager">Project Manager</option>
-                            <option value="team_member">Team Member</option>
-                            <option value="auditor">Auditor</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${
-                              roleColors[m.role] || roleColors.team_member
-                            }`}
-                          >
-                            {m.role.replace('_', ' ').toUpperCase()}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6 text-xs text-slate-500">{m.joinedAt.split('T')[0]}</td>
-                      {isOwnerOrAdmin && (
-                        <td className="py-4 px-6 text-right">
-                          {m.userId !== user?.id && (
-                            <button
-                              onClick={() => handleRemoveMember(m.userId)}
-                              className="text-xs text-rose-600 hover:text-rose-800 font-medium hover:underline"
+                <tbody className="divide-y divide-black/[0.04]">
+                  {members.map((member) => {
+                    const style = roleStyles[member.role] || roleStyles.team_member;
+                    return (
+                      <tr key={member.id} className="hover:bg-black/[0.015] transition-colors">
+                        <td className="py-3.5 px-6">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-[#007AFF]/10 text-[#007AFF] font-bold text-xs flex items-center justify-center shrink-0 border border-[#007AFF]/20">
+                              {getInitials(member.fullName)}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-[#1D1D1F]">{member.fullName}</div>
+                              <div className="text-[11px] text-[#86868B] font-mono">{member.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-6">
+                          {isOwnerOrAdmin && member.userId !== user?.id ? (
+                            <select
+                              value={member.role}
+                              onChange={(e) => handleRoleChange(member.userId, e.target.value as UserRole)}
+                              className="px-2 py-1 border border-black/[0.12] rounded-[6px] text-xs bg-white text-[#1D1D1F] focus:ring-1 focus:ring-[#007AFF] outline-none"
                             >
-                              Remove
-                            </button>
+                              <option value="org_owner">Organization Owner</option>
+                              <option value="project_manager">Project Manager</option>
+                              <option value="team_member">Team Member</option>
+                              <option value="auditor">Compliance Auditor</option>
+                            </select>
+                          ) : (
+                            <span className={`px-2 py-0.5 rounded-[4px] border font-medium text-[10px] ${style.badge}`}>
+                              {style.label}
+                            </span>
                           )}
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td className="py-3.5 px-6">
+                          <span className="inline-flex items-center space-x-1.5 text-[#34C759] font-medium text-[11px]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#34C759]"></span>
+                            <span>Active</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-6 text-[#86868B] font-mono text-[11px]">
+                          {member.joinedAt?.split('T')[0] || '2026-11-01'}
+                        </td>
+                        {isOwnerOrAdmin && (
+                          <td className="py-3.5 px-6 text-right">
+                            {member.userId !== user?.id && member.role !== 'org_owner' ? (
+                              <button
+                                onClick={() => handleRemoveMember(member.userId)}
+                                className="text-rose-600 hover:text-rose-800 text-xs font-medium hover:underline"
+                              >
+                                Remove
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-[#86868B]">Protected</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Pending Invitations Section */}
+          {/* Pending Invitations Card */}
           {invitations.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 text-base">Pending Invitations</h3>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                  {invitations.length} Pending
-                </span>
+            <div className="apple-card p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
+                <h3 className="font-semibold text-sm text-[#1D1D1F]">Pending Workspace Invitations</h3>
+                <span className="text-[11px] text-[#86868B]">Enqueued in Email Job Dispatcher</span>
               </div>
-
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-black/[0.04]">
                 {invitations.map((inv) => (
-                  <div key={inv.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50">
+                  <div key={inv.id} className="py-3 flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
-                        ✉
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900">{inv.email}</div>
-                        <div className="text-xs text-slate-400">
-                          Role: <strong className="text-slate-600">{inv.role}</strong> • Invited by:{' '}
-                          <span className="text-slate-600">{inv.inviterName}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xs text-slate-400">
-                        Expires: {new Date(inv.expiresAt).toLocaleDateString()}
+                      <span className="font-mono text-[11px] text-[#1D1D1F] font-medium">{inv.email}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                        {inv.role}
                       </span>
-                      {isOwnerOrAdmin && (
-                        <button
-                          onClick={() => handleCancelInvite(inv.id)}
-                          className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded border border-rose-200 font-medium transition-colors"
-                        >
-                          Revoke
-                        </button>
-                      )}
+                      <span className="text-[11px] text-[#86868B]">Expires in 7 days</span>
                     </div>
+                    {isOwnerOrAdmin && (
+                      <button
+                        onClick={() => handleCancelInvite(inv.id)}
+                        className="text-xs text-rose-600 hover:text-rose-800 hover:underline font-medium"
+                      >
+                        Revoke
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Invite User Modal */}
+          {/* Invite Member Modal Sheet */}
           {isInviteModalOpen && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
-                <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className="font-bold text-lg text-slate-900">Invite New Team Member</h3>
-                  <button onClick={() => setIsInviteModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">
+            <div className="fixed inset-0 z-50 bg-black/35 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-apple-sheet max-w-md w-full p-6 space-y-5 border border-black/10 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex justify-between items-center border-b border-black/[0.08] pb-3">
+                  <h3 className="font-semibold text-base text-[#1D1D1F]">Invite Team Member</h3>
+                  <button
+                    onClick={() => setIsInviteModalOpen(false)}
+                    className="text-[#8E8E93] hover:text-[#1D1D1F] w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/[0.05] transition-colors"
+                  >
                     ✕
                   </button>
                 </div>
 
                 <form onSubmit={handleSendInvite} className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Corporate Email Address</label>
+                    <label className="text-xs font-semibold text-[#1D1D1F] block mb-1">
+                      Email Address
+                    </label>
                     <input
                       type="email"
                       required
-                      placeholder="colleague@acme.com"
+                      placeholder="engineer@acme.com"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Assign Initial Role</label>
+                    <label className="text-xs font-semibold text-[#1D1D1F] block mb-1">
+                      Target Role
+                    </label>
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                      className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
                     >
-                      <option value="team_member">Team Member (Developer / Contributor)</option>
-                      <option value="project_manager">Project Manager (Can create projects & tasks)</option>
-                      <option value="auditor">Auditor (Read-only compliance & audit timeline)</option>
-                      <option value="org_owner">Organization Owner (Full administrative privileges)</option>
+                      <option value="project_manager">Project Manager</option>
+                      <option value="team_member">Team Member</option>
+                      <option value="auditor">Compliance Auditor</option>
                     </select>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-500 border border-slate-100">
-                    An onboarding invitation token will be generated and an asynchronous dispatch job will be queued with deduplication protection.
+                  <div className="bg-[#F5F5F7] p-3 rounded-[10px] text-[11px] text-[#6E6E73] border border-black/[0.06]">
+                    <strong>Asynchronous Job Queue:</strong> Sending an invitation dispatches a resilient background queue job with exponential retry backoff and DLQ telemetry.
                   </div>
 
-                  <div className="flex justify-end space-x-2 pt-2">
+                  <div className="flex items-center justify-end space-x-2.5 pt-3 border-t border-black/[0.08]">
                     <button
                       type="button"
                       onClick={() => setIsInviteModalOpen(false)}
-                      className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                      className="px-3.5 py-1.5 text-xs text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-black/[0.04] rounded-[8px] transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-50"
+                      className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
                     >
-                      {isSubmitting ? 'Sending...' : 'Send Invitation'}
+                      {isSubmitting ? 'Enqueuing...' : 'Send Invitation'}
                     </button>
                   </div>
                 </form>

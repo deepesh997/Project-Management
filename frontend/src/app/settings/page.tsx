@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
-import { UserRole } from '../../types';
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -14,118 +13,108 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-[#F5F5F7]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <Topbar />
 
         <main className="p-8 max-w-4xl w-full mx-auto space-y-6">
+          {/* Header Row */}
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Tenant & Infrastructure Settings</h2>
-              <p className="text-sm text-slate-500">
-                Organization Scope: `org-acme-101` • Access Restricted to Org Owners & Admins
+            <div className="space-y-0.5">
+              <h2 className="text-xl font-bold text-[#1D1D1F] tracking-tight">
+                Tenant & Infrastructure Settings
+              </h2>
+              <p className="text-xs text-[#6E6E73]">
+                Organization Scope: `org-acme-101` • Access Restricted to Org Owners & Platform Admins
               </p>
             </div>
             {saved && (
-              <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200">
+              <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-[6px] border border-emerald-200 animate-in fade-in">
                 ✓ Settings saved
               </span>
             )}
           </div>
 
-          {/* Database & Supabase Status Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900">Live Database Cluster</h3>
-              <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                Connected
+          {/* Database & Supabase Live Cluster Card */}
+          <div className="apple-card p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
+              <div>
+                <h3 className="font-semibold text-sm text-[#1D1D1F]">Live Database Cluster</h3>
+                <p className="text-[11px] text-[#6E6E73]">Connected to Supabase PostgreSQL 16</p>
+              </div>
+              <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Cluster Live</span>
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block mb-0.5 font-medium">Provider</span>
-                <span className="font-semibold text-slate-800">Supabase PostgreSQL 16</span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div className="p-3.5 bg-[#F5F5F7] rounded-[10px] border border-black/[0.04]">
+                <span className="text-[#86868B] block mb-0.5 font-medium text-[11px]">Database Provider</span>
+                <span className="font-semibold text-[#1D1D1F]">Supabase PostgreSQL 16 (AWS Tokyo Pooler)</span>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block mb-0.5 font-medium">Pooler Host</span>
-                <span className="font-mono text-slate-800">aws-0-ap-northeast-2.pooler.supabase.com</span>
+              <div className="p-3.5 bg-[#F5F5F7] rounded-[10px] border border-black/[0.04]">
+                <span className="text-[#86868B] block mb-0.5 font-medium text-[11px]">Pooler Endpoint</span>
+                <span className="font-mono text-[#1D1D1F]">aws-0-ap-northeast-2.pooler.supabase.com:5432</span>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block mb-0.5 font-medium">Database</span>
-                <span className="font-mono text-slate-800">postgres (Port 5432)</span>
+              <div className="p-3.5 bg-[#F5F5F7] rounded-[10px] border border-black/[0.04]">
+                <span className="text-[#86868B] block mb-0.5 font-medium text-[11px]">Database Name</span>
+                <span className="font-mono text-[#1D1D1F]">postgres (PgBouncer Transaction Mode)</span>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-400 block mb-0.5 font-medium">SSL Mode</span>
-                <span className="font-semibold text-emerald-600">Strict TLS / RejectUnauthorized</span>
+              <div className="p-3.5 bg-[#F5F5F7] rounded-[10px] border border-black/[0.04]">
+                <span className="text-[#86868B] block mb-0.5 font-medium text-[11px]">Encryption & SSL</span>
+                <span className="font-semibold text-[#34C759]">Strict TLS 1.3 / RejectUnauthorized</span>
               </div>
             </div>
           </div>
 
-          {/* Organization Details */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900">Organization Profile</h3>
-            <div className="space-y-3">
+          {/* Organization Details Card */}
+          <div className="apple-card p-6 space-y-4">
+            <div className="border-b border-black/[0.06] pb-3">
+              <h3 className="font-semibold text-sm text-[#1D1D1F]">Organization Profile</h3>
+              <p className="text-[11px] text-[#6E6E73]">Tenant configuration and tier quota parameters</p>
+            </div>
+
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Company Name</label>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Company Display Name</label>
                 <input
                   type="text"
                   defaultValue="Acme Technologies Inc."
-                  className="w-full px-3 py-2 border rounded-lg text-sm text-slate-800"
+                  className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Tenant Slug (Identifier)</label>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Tenant Slug (Identifier)</label>
                 <input
                   type="text"
                   defaultValue="acme-corp"
                   disabled
-                  className="w-full px-3 py-2 border rounded-lg text-sm text-slate-500 bg-slate-50 font-mono"
+                  className="w-full px-3 py-2 border border-black/[0.06] rounded-[8px] text-xs text-[#86868B] bg-[#F5F5F7] font-mono cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Subscription Plan</label>
-                <select defaultValue="ENTERPRISE" className="w-full px-3 py-2 border rounded-lg text-sm text-slate-800">
-                  <option value="STARTER">Starter Plan (Up to 5 Users)</option>
-                  <option value="PRO">Pro Plan (Up to 25 Users)</option>
-                  <option value="ENTERPRISE">Enterprise Plan (Unlimited Seats + OCC Support)</option>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Subscription Tier</label>
+                <select
+                  defaultValue="ENTERPRISE"
+                  className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                >
+                  <option value="STARTER">Starter Tier (Up to 5 Users)</option>
+                  <option value="PRO">Pro Tier (Up to 25 Users)</option>
+                  <option value="ENTERPRISE">Enterprise Tier (Unlimited Seats + OCC Guarding)</option>
                 </select>
               </div>
             </div>
-          </div>
 
-          {/* Webhook Configuration */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900">Webhook Endpoints & Security</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Incoming Webhook Ingestion URL</label>
-                <input
-                  type="text"
-                  defaultValue="http://localhost:4000/api/v1/integrations/webhooks/incoming"
-                  readOnly
-                  className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-slate-600 bg-slate-50"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">HMAC-SHA256 Signing Secret</label>
-                <input
-                  type="password"
-                  defaultValue="whsec_worksphere_signature_secret_test_key_99"
-                  readOnly
-                  className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-slate-600 bg-slate-50"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
+            <div className="pt-3 flex justify-end">
               <button
+                type="button"
                 onClick={handleSave}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm"
+                className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
               >
                 Save Settings
               </button>

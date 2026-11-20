@@ -24,42 +24,58 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200 space-y-6">
+    <div className="min-h-screen bg-[#1C1C1E] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-apple-sheet max-w-md w-full p-8 border border-white/20 space-y-6">
+        {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-indigo-600 rounded-xl mx-auto flex items-center justify-center text-white font-bold text-xl shadow-lg">
+          <div className="w-11 h-11 bg-gradient-to-b from-[#007AFF] to-[#0062CC] rounded-[10px] mx-auto flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-blue-500/30 border border-white/20">
             WS
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900">WorkSphere Portal</h2>
-          <p className="text-sm text-slate-500">Sign in to your organization tenant workspace</p>
+          <h2 className="text-xl font-bold text-[#1D1D1F] tracking-tight">
+            WorkSphere Portal
+          </h2>
+          <p className="text-xs text-[#6E6E73]">
+            Sign in to your organization tenant workspace
+          </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-lg border border-rose-200 flex items-center justify-between">
+          <div className="p-3 bg-rose-50 text-rose-800 text-xs rounded-[8px] border border-rose-200 flex items-center justify-between animate-in fade-in">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="font-bold">✕</button>
+            <button onClick={() => setError(null)} className="font-bold text-xs ml-2">✕</button>
           </div>
         )}
 
-        <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
+        {/* Credentials Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleLogin();
+          }}
+          className="space-y-4 text-xs"
+        >
           <div>
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Corporate Email</label>
+            <label className="font-semibold text-[#1D1D1F] block mb-1">
+              Corporate Email
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Password</label>
+            <label className="font-semibold text-[#1D1D1F] block mb-1">
+              Password
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
               required
             />
           </div>
@@ -67,44 +83,49 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition-colors disabled:opacity-50"
+            className="w-full py-2 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white font-semibold rounded-[8px] text-xs shadow-sm transition-all disabled:opacity-50"
           >
-            {isLoading ? 'Verifying with Backend...' : 'Sign In with JWT Authentication'}
+            {isLoading ? 'Authenticating with Backend...' : 'Sign In with JWT'}
           </button>
         </form>
 
-        <div className="border-t border-slate-100 pt-4">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 text-center">
-            One-Click Real Authenticated Personas
+        {/* 1-Click Persona Switcher for Evaluation */}
+        <div className="border-t border-black/[0.06] pt-4 space-y-2">
+          <span className="text-[11px] font-semibold text-[#86868B] uppercase tracking-wider block text-center">
+            One-Click Authenticated Personas
           </span>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               onClick={() => handleLogin('owner@acme.com')}
               disabled={isLoading}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-purple-700 border-purple-200 transition-colors"
+              className="p-2 border border-purple-200 bg-purple-50/50 hover:bg-purple-100/50 rounded-[8px] text-left text-purple-900 transition-colors"
             >
-              👑 Elena Vance<br/><span className="text-[10px] text-slate-400">Org Owner</span>
+              <div className="font-semibold">Elena Vance</div>
+              <div className="text-[10px] text-purple-700">Organization Owner</div>
             </button>
             <button
               onClick={() => handleLogin('pm@acme.com')}
               disabled={isLoading}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-blue-700 border-blue-200 transition-colors"
+              className="p-2 border border-blue-200 bg-blue-50/50 hover:bg-blue-100/50 rounded-[8px] text-left text-blue-900 transition-colors"
             >
-              📊 Marcus Brody<br/><span className="text-[10px] text-slate-400">Project Manager</span>
+              <div className="font-semibold">Marcus Brody</div>
+              <div className="text-[10px] text-blue-700">Project Manager</div>
             </button>
             <button
               onClick={() => handleLogin('member@acme.com')}
               disabled={isLoading}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-emerald-700 border-emerald-200 transition-colors"
+              className="p-2 border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 rounded-[8px] text-left text-emerald-900 transition-colors"
             >
-              💻 Sarah Connor<br/><span className="text-[10px] text-slate-400">Team Member (Dev)</span>
+              <div className="font-semibold">Sarah Connor</div>
+              <div className="text-[10px] text-emerald-700">Team Member (Dev)</div>
             </button>
             <button
               onClick={() => handleLogin('auditor@acme.com')}
               disabled={isLoading}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-amber-700 border-amber-200 transition-colors"
+              className="p-2 border border-amber-200 bg-amber-50/50 hover:bg-amber-100/50 rounded-[8px] text-left text-amber-900 transition-colors"
             >
-              🔍 Arthur Pendelton<br/><span className="text-[10px] text-slate-400">Auditor</span>
+              <div className="font-semibold">Arthur Pendelton</div>
+              <div className="text-[10px] text-amber-700">Compliance Auditor</div>
             </button>
           </div>
         </div>

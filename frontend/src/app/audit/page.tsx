@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
-import { UserRole } from '../../types';
 
 export default function AuditTimelinePage() {
   const demoLogs = [
@@ -13,9 +12,9 @@ export default function AuditTimelinePage() {
       entityType: 'TASK',
       entityId: 'task-concurrency-target',
       performedBy: 'member@acme.com',
-      details: 'Concurrent race condition halted. Attempted v1 on current v2.',
+      details: 'Concurrent race condition halted by Compare-and-Swap. Attempted stale v1 against server authoritative v2.',
       time: '2 mins ago',
-      badge: 'bg-rose-100 text-rose-800 border-rose-200',
+      badge: 'bg-rose-50 text-rose-700 border-rose-200',
     },
     {
       id: 'act-900',
@@ -23,18 +22,19 @@ export default function AuditTimelinePage() {
       entityType: 'TASK',
       entityId: 'task-concurrency-target',
       performedBy: 'pm@acme.com',
-      details: 'Task advanced to Version 2. Status changed to IN_REVIEW.',
+      details: 'Task advanced to Version 2. Status transitioned to IN_PROGRESS.',
       time: '3 mins ago',
-      badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      badge: 'bg-blue-50 text-blue-700 border-blue-200',
     },
     {
       id: 'act-899',
       action: 'CROSS_TENANT_ACCESS_DENIED',
       entityType: 'SECURITY',
       entityId: 'hacker@globex.com',
-      details: 'Blocked attempted tenant boundary crossing from org-globex-202.',
+      performedBy: 'enforceTenantIsolation',
+      details: 'Blocked attempted tenant boundary violation from foreign org-globex-202 token.',
       time: '15 mins ago',
-      badge: 'bg-amber-100 text-amber-800 border-amber-200',
+      badge: 'bg-amber-50 text-amber-800 border-amber-200',
     },
     {
       id: 'act-898',
@@ -42,53 +42,97 @@ export default function AuditTimelinePage() {
       entityType: 'PROJECT',
       entityId: 'proj-acme-alpha',
       performedBy: 'owner@acme.com',
-      details: 'New project "Phoenix Multi-Cloud Architecture" provisioned.',
+      details: 'New roadmap "Phoenix Multi-Cloud Architecture" provisioned on Supabase PostgreSQL.',
       time: '1 hour ago',
-      badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    },
+    {
+      id: 'act-897',
+      action: 'MEMBER_INVITED',
+      entityType: 'ORGANIZATION',
+      entityId: 'org-acme-101',
+      performedBy: 'owner@acme.com',
+      details: 'Invitation dispatched to engineer@acme.com. Asynchronous worker queue job created.',
+      time: '2 hours ago',
+      badge: 'bg-purple-50 text-purple-700 border-purple-200',
     },
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-[#F5F5F7]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <Topbar />
 
         <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
+          {/* Header Row */}
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Compliance & Audit Timeline</h2>
-              <p className="text-sm text-slate-500">
-                Append-Only Immutable Event Trail • Scoped to Tenant `org-acme-101`
+            <div className="space-y-0.5">
+              <h2 className="text-xl font-bold text-[#1D1D1F] tracking-tight">
+                Compliance & Immutable Audit Timeline
+              </h2>
+              <p className="text-xs text-[#6E6E73]">
+                Append-Only Tamper-Evident Event Trail • Scoped to Tenant `org-acme-101`
               </p>
             </div>
-            <span className="px-3 py-1 bg-amber-50 text-amber-800 text-xs font-semibold rounded-full border border-amber-200">
-              Auditor Role Active
+            <span className="px-2.5 py-1 bg-amber-50 text-amber-800 text-xs font-semibold rounded-[6px] border border-amber-200 flex items-center space-x-1.5">
+              <span>🛡️</span>
+              <span>Auditor Active</span>
             </span>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 divide-y divide-slate-100">
-            {demoLogs.map((log) => (
-              <div key={log.id} className="p-5 flex items-start justify-between hover:bg-slate-50/50 transition-colors">
-                <div className="flex items-start space-x-4">
-                  <div className="mt-1">
-                    <span className={`px-2.5 py-1 text-xs font-mono font-bold rounded-md border ${log.badge}`}>
-                      {log.action}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-slate-900 text-sm">{log.details}</div>
-                    <div className="text-xs text-slate-400 mt-1 flex items-center space-x-3">
-                      <span>Entity: <strong className="text-slate-600">{log.entityType} ({log.entityId})</strong></span>
-                      <span>•</span>
-                      <span>User: <strong className="text-slate-600">{log.performedBy}</strong></span>
+          {/* Audit Event Stream Card */}
+          <div className="apple-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-sm text-[#1D1D1F]">
+                  Security & Concurrency Event Log
+                </h3>
+                <p className="text-[11px] text-[#6E6E73]">
+                  Real-time recording of OCC conflict events, access checks, and state transitions
+                </p>
+              </div>
+              <span className="text-[11px] font-mono bg-black/[0.04] text-[#6E6E73] px-2 py-0.5 rounded-[5px]">
+                Immutable Ledger
+              </span>
+            </div>
+
+            <div className="divide-y divide-black/[0.04]">
+              {demoLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="p-5 flex items-start justify-between hover:bg-black/[0.015] transition-colors"
+                >
+                  <div className="flex items-start space-x-4">
+                    <div className="mt-0.5 shrink-0">
+                      <span className={`px-2 py-0.5 text-[10px] font-mono font-semibold rounded-[4px] border ${log.badge}`}>
+                        {log.action}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="font-medium text-[#1D1D1F] text-xs leading-relaxed">
+                        {log.details}
+                      </div>
+                      <div className="text-[11px] text-[#86868B] flex items-center space-x-3">
+                        <span>
+                          Entity: <strong className="text-[#1D1D1F] font-mono">{log.entityType} ({log.entityId})</strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Actor: <strong className="text-[#1D1D1F]">{log.performedBy}</strong>
+                        </span>
+                        <span>•</span>
+                        <span className="font-mono text-[10px] text-[#86868B]">{log.id}</span>
+                      </div>
                     </div>
                   </div>
+                  <span className="text-[11px] text-[#86868B] whitespace-nowrap pl-4">
+                    {log.time}
+                  </span>
                 </div>
-                <span className="text-xs text-slate-400 whitespace-nowrap">{log.time}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </main>
       </div>

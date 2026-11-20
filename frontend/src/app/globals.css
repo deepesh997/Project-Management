@@ -3,12 +3,105 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-rgb: 248, 250, 252;
+  --apple-bg: #F5F5F7;
+  --apple-bg-secondary: #FFFFFF;
+  --apple-separator: rgba(0, 0, 0, 0.08);
+  --apple-label: #1D1D1F;
+  --apple-secondary-label: #6E6E73;
+  --apple-tertiary-label: #86868B;
+  --apple-accent: #007AFF;
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+@layer base {
+  * {
+    border-color: var(--apple-separator);
+  }
+
+  body {
+    background-color: var(--apple-bg);
+    color: var(--apple-label);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+  }
+}
+
+/* Apple HIG Translucent Material Classes */
+.apple-glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.apple-glass-dark {
+  background: rgba(28, 28, 30, 0.88);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+}
+
+.apple-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.apple-button-primary {
+  background: #007AFF;
+  color: #FFFFFF;
+  font-weight: 500;
+  border-radius: 9px;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 122, 255, 0.2);
+}
+
+.apple-button-primary:hover {
+  background: #0062CC;
+}
+
+.apple-button-primary:active {
+  transform: scale(0.98);
+}
+
+.apple-button-secondary {
+  background: rgba(0, 0, 0, 0.04);
+  color: #1D1D1F;
+  font-weight: 500;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.15s ease-in-out;
+}
+
+.apple-button-secondary:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.apple-button-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Custom Minimal macOS Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
