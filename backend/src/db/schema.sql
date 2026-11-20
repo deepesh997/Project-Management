@@ -167,3 +167,18 @@ CREATE TABLE IF NOT EXISTS revoked_tokens (
     revoked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_revoked_expiry ON revoked_tokens(expires_at);
+
+-- 13. User Invitations & Team Onboarding
+CREATE TABLE IF NOT EXISTS invitations (
+    id VARCHAR(64) PRIMARY KEY,
+    org_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'team_member',
+    token VARCHAR(255) UNIQUE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    invited_by VARCHAR(64) NOT NULL REFERENCES users(id),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_invitations_org ON invitations(org_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);

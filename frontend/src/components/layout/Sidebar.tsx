@@ -3,60 +3,66 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserRole } from '../../types';
+import { useAuth } from '../../lib/auth-context';
+import { UserRole } from '../../types/index.ts';
 
-interface SidebarProps {
-  currentRole: UserRole;
-  onRoleChange: (role: UserRole) => void;
-}
+const roleLabels: Record<UserRole, { label: string; badgeClass: string }> = {
+  platform_admin: { label: 'Platform Admin', badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+  org_owner: { label: 'Organization Owner', badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  project_manager: { label: 'Project Manager', badgeClass: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  team_member: { label: 'Team Member', badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  auditor: { label: 'Auditor (Compliance)', badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+};
 
-export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const currentRole: UserRole = user?.role || 'team_member';
+  const roleInfo = roleLabels[currentRole] || roleLabels.team_member;
 
   const navItems = [
     { label: 'Overview', href: '/', roles: ['platform_admin', 'org_owner', 'project_manager', 'team_member', 'auditor'] },
     { label: 'Tasks & Kanban (OCC)', href: '/tasks', roles: ['platform_admin', 'org_owner', 'project_manager', 'team_member'] },
     { label: 'Projects & Milestones', href: '/projects', roles: ['platform_admin', 'org_owner', 'project_manager'] },
+    { label: 'Team & User Management', href: '/team', roles: ['platform_admin', 'org_owner', 'project_manager'] },
     { label: 'Analytics (FastAPI)', href: '/analytics', roles: ['platform_admin', 'org_owner', 'project_manager'] },
     { label: 'Audit Timeline', href: '/audit', roles: ['platform_admin', 'org_owner', 'auditor'] },
     { label: 'Tenant Settings', href: '/settings', roles: ['platform_admin', 'org_owner'] },
   ];
 
-  const filteredNav = navItems.filter((item) => item.roles.includes(currentRole));
+  const filteredNav = navItems.filter((item) =>
+    currentRole === 'platform_admin' || item.roles.includes(currentRole)
+  );
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'WS';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800">
+    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 shrink-0">
+      {/* Brand Header */}
       <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        <Link href="/" className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md">
             WS
           </div>
-          <span className="font-bold text-lg tracking-tight">WorkSphere</span>
-        </div>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">v1.0</span>
+          <span className="font-bold text-lg tracking-tight text-white">WorkSphere</span>
+        </Link>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono font-medium border border-slate-700">
+          SaaS v1.0
+        </span>
       </div>
 
-      {/* Role Switcher for Assessment 01 Demonstration */}
-      <div className="p-4 border-b border-slate-800 bg-slate-950/40">
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-          Active Role Simulation
-        </label>
-        <select
-          value={currentRole}
-          onChange={(e) => onRoleChange(e.target.value as UserRole)}
-          aria-label="Active Role Simulation"
-          className="w-full bg-slate-800 text-sm text-slate-200 border border-slate-700 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-        >
-          <option value="org_owner">Organization Owner</option>
-          <option value="project_manager">Project Manager</option>
-          <option value="team_member">Team Member</option>
-          <option value="auditor">Auditor (Compliance)</option>
-          <option value="platform_admin">Platform Administrator</option>
-        </select>
-      </div>
-
-      <nav className="flex-1 p-3 space-y-1">
-        <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      {/* Navigation Menu */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <div className="px-3 py-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
           Workspace Navigation
         </div>
         {filteredNav.map((item) => {
@@ -77,14 +83,35 @@ export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800 bg-slate-950/60 text-xs text-slate-400">
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-semibold text-slate-300">Tenant:</span>
-          <span className="font-mono text-indigo-400">org-acme-101</span>
+      {/* Authenticated User Profile & Sign Out (Replaced Artificial Simulation Dropdown) */}
+      <div className="p-4 border-t border-slate-800 bg-slate-950/80 space-y-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
+            {getInitials(user?.fullName)}
+          </div>
+          <div className="overflow-hidden flex-1">
+            <div className="text-sm font-semibold text-white truncate">
+              {user?.fullName || 'Authenticated User'}
+            </div>
+            <div className="text-[11px] text-slate-400 truncate">{user?.email || 'user@acme.com'}</div>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span>Isolation Mode:</span>
-          <span className="text-emerald-400 font-medium">Strict Enforced</span>
+
+        <div className="flex items-center justify-between pt-1">
+          <span className={`text-[11px] px-2 py-0.5 rounded-md border font-semibold ${roleInfo.badgeClass}`}>
+            {roleInfo.label}
+          </span>
+          <button
+            onClick={() => logout()}
+            className="text-xs text-rose-400 hover:text-rose-300 hover:underline font-medium transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+
+        <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/60">
+          <span>Tenant:</span>
+          <span className="font-mono text-indigo-400 font-semibold">{user?.orgId || 'org-acme-101'}</span>
         </div>
       </div>
     </aside>

@@ -22,6 +22,7 @@ export class DatabaseStore {
     this.subtasks = new Map();
     this.comments = new Map();
     this.activityLogs = [];
+    this.invitations = new Map();
     this.revokedTokens = new Set();
     this.processedEvents = new Map(); // idempotency_key -> { status, payload, createdAt }
   }
@@ -155,6 +156,144 @@ export class DatabaseStore {
       }
     }
     return null;
+  }
+
+  // --- Team & User Management ---
+  listMembers(orgId) {
+    const list = [];
+    for (const m of this.memberships.values()) {
+      if (m.orgId === orgId) {
+        const u = this.users.get(m.userId);
+        if (u) {
+          list.push({
+            id: m.id,
+            userId: u.id,
+            email: u.email,
+            fullName: u.fullName,
+            role: m.role,
+            isActive: u.isActive,
+            joinedAt: m.createdAt,
+          });
+        }
+      }
+    }
+    return list;
+  }
+
+  updateMemberRole(orgId, userId, newRole, actorId) {
+    let targetMem = null;
+    for (const m of this.memberships.values()) {
+      if (m.orgId === orgId && m.userId === userId) {
+        targetMem = m;
+        break;
+      }
+    }
+    if (!targetMem) return { success: false, reason: 'NOT_FOUND' };
+
+    const oldRole = targetMem.role;
+    targetMem.role = newRole;
+    targetMem.updatedAt = new Date().toISOString();
+
+    this.logActivity({
+      orgId,
+      entityType: 'USER_MANAGEMENT',
+      entityId: userId,
+      action: 'ROLE_CHANGED',
+      performedBy: actorId,
+      payload: { oldRole, newRole, targetUserId: userId },
+    });
+
+    return { success: true, member: targetMem };
+  }
+
+  removeMember(orgId, userId, actorId) {
+    let memKeyToRemove = null;
+    for (const [key, m] of this.memberships.entries()) {
+      if (m.orgId === orgId && m.userId === userId) {
+        memKeyToRemove = key;
+        break;
+      }
+    }
+    if (!memKeyToRemove) return { success: false, reason: 'NOT_FOUND' };
+
+    this.memberships.delete(memKeyToRemove);
+
+    this.logActivity({
+      orgId,
+      entityType: 'USER_MANAGEMENT',
+      entityId: userId,
+      action: 'MEMBER_REMOVED',
+      performedBy: actorId,
+      payload: { removedUserId: userId },
+    });
+
+    return { success: true };
+  }
+
+  createInvitation({ orgId, email, role = 'team_member', invitedBy }) {
+    const existingUser = this.getUserByEmail(email);
+    if (existingUser && this.getUserMembership(existingUser.id, orgId)) {
+      return { success: false, reason: 'ALREADY_MEMBER', message: 'User is already a member of this organization.' };
+    }
+
+    const id = `inv-${uuidv4()}`;
+    const token = `invtok_${uuidv4().replace(/-/g, '')}`;
+    const invitation = {
+      id,
+      orgId,
+      email: email.toLowerCase().trim(),
+      role,
+      token,
+      status: 'PENDING',
+      invitedBy,
+      expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    this.invitations.set(id, invitation);
+
+    this.logActivity({
+      orgId,
+      entityType: 'INVITATION',
+      entityId: id,
+      action: 'INVITATION_SENT',
+      performedBy: invitedBy,
+      payload: { email: invitation.email, role: invitation.role, expiresAt: invitation.expiresAt },
+    });
+
+    return { success: true, invitation };
+  }
+
+  listInvitations(orgId) {
+    const list = [];
+    for (const inv of this.invitations.values()) {
+      if (inv.orgId === orgId && inv.status === 'PENDING') {
+        const inviter = this.users.get(inv.invitedBy);
+        list.push({
+          ...inv,
+          inviterName: inviter?.fullName || 'Administrator',
+        });
+      }
+    }
+    return list;
+  }
+
+  cancelInvitation(invitationId, orgId, actorId) {
+    const inv = this.invitations.get(invitationId);
+    if (!inv || inv.orgId !== orgId) return { success: false, reason: 'NOT_FOUND' };
+
+    inv.status = 'CANCELLED';
+
+    this.logActivity({
+      orgId,
+      entityType: 'INVITATION',
+      entityId: invitationId,
+      action: 'INVITATION_CANCELLED',
+      performedBy: actorId,
+      payload: { email: inv.email },
+    });
+
+    return { success: true };
   }
 
   // --- Tasks & Optimistic Concurrency Control ---

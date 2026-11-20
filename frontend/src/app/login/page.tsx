@@ -1,21 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ApiClient } from '../../lib/api';
+import { useAuth } from '../../lib/auth-context';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('owner@acme.com');
   const [password, setPassword] = useState('Password123!');
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (demoEmail?: string) => {
-    const targetEmail = demoEmail || email;
+  const handleLogin = async (targetEmail?: string) => {
+    const emailToUse = targetEmail || email;
     setError(null);
-    // Set demo token for immediate dashboard demo
-    ApiClient.setAuth('mock-jwt-token-demo', 'org-acme-101');
-    router.push('/');
+    setIsLoading(true);
+
+    const res = await login(emailToUse, password);
+    setIsLoading(false);
+
+    if (!res.success) {
+      setError(res.error || 'Authentication failed. Please verify credentials.');
+    }
   };
 
   return (
@@ -30,8 +35,9 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-lg border border-rose-200">
-            {error}
+          <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-lg border border-rose-200 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="font-bold">✕</button>
           </div>
         )}
 
@@ -60,40 +66,45 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition-colors"
+            disabled={isLoading}
+            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition-colors disabled:opacity-50"
           >
-            Sign In with Tenant Verification
+            {isLoading ? 'Verifying with Backend...' : 'Sign In with JWT Authentication'}
           </button>
         </form>
 
         <div className="border-t border-slate-100 pt-4">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 text-center">
-            One-Click Demo Personas
+            One-Click Real Authenticated Personas
           </span>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               onClick={() => handleLogin('owner@acme.com')}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-purple-700 border-purple-200"
+              disabled={isLoading}
+              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-purple-700 border-purple-200 transition-colors"
             >
-              👑 Org Owner
+              👑 Elena Vance<br/><span className="text-[10px] text-slate-400">Org Owner</span>
             </button>
             <button
               onClick={() => handleLogin('pm@acme.com')}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-blue-700 border-blue-200"
+              disabled={isLoading}
+              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-blue-700 border-blue-200 transition-colors"
             >
-              📊 Project Manager
+              📊 Marcus Brody<br/><span className="text-[10px] text-slate-400">Project Manager</span>
             </button>
             <button
               onClick={() => handleLogin('member@acme.com')}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-emerald-700 border-emerald-200"
+              disabled={isLoading}
+              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-emerald-700 border-emerald-200 transition-colors"
             >
-              💻 Team Member
+              💻 Sarah Connor<br/><span className="text-[10px] text-slate-400">Team Member (Dev)</span>
             </button>
             <button
               onClick={() => handleLogin('auditor@acme.com')}
-              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-amber-700 border-amber-200"
+              disabled={isLoading}
+              className="p-2 border rounded-lg hover:bg-slate-50 text-left font-medium text-amber-700 border-amber-200 transition-colors"
             >
-              🔍 Auditor
+              🔍 Arthur Pendelton<br/><span className="text-[10px] text-slate-400">Auditor</span>
             </button>
           </div>
         </div>

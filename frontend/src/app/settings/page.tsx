@@ -6,7 +6,6 @@ import { Topbar } from '../../components/layout/Topbar';
 import { UserRole } from '../../types';
 
 export default function SettingsPage() {
-  const [role, setRole] = useState<UserRole>('org_owner');
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -16,10 +15,10 @@ export default function SettingsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar currentRole={role} onRoleChange={setRole} />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <Topbar currentRole={role} />
+        <Topbar />
 
         <main className="p-8 max-w-4xl w-full mx-auto space-y-6">
           <div className="flex items-center justify-between">

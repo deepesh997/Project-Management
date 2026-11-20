@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Topbar } from '../components/layout/Topbar';
-import { UserRole } from '../types';
+import { useAuth } from '../lib/auth-context';
 
 export default function DashboardPage() {
-  const [role, setRole] = useState<UserRole>('project_manager');
+  const { user } = useAuth();
+  const role = user?.role || 'team_member';
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar currentRole={role} onRoleChange={setRole} />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <Topbar currentRole={role} />
+        <Topbar />
 
         <main className="p-8 max-w-7xl w-full mx-auto space-y-8">
           {/* Welcome Banner */}

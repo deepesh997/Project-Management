@@ -6,7 +6,6 @@ import { Topbar } from '../../components/layout/Topbar';
 import { UserRole } from '../../types';
 
 export default function AnalyticsPage() {
-  const [role, setRole] = useState<UserRole>('project_manager');
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
 
@@ -20,10 +19,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar currentRole={role} onRoleChange={setRole} />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <Topbar currentRole={role} />
+        <Topbar />
 
         <main className="p-8 max-w-7xl w-full mx-auto space-y-8">
           <div className="flex items-center justify-between">

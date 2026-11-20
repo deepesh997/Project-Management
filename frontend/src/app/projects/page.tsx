@@ -6,8 +6,6 @@ import { Topbar } from '../../components/layout/Topbar';
 import { UserRole } from '../../types';
 
 export default function ProjectsPage() {
-  const [role, setRole] = useState<UserRole>('project_manager');
-
   const demoProjects = [
     {
       id: 'proj-acme-alpha',
@@ -40,10 +38,10 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar currentRole={role} onRoleChange={setRole} />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <Topbar currentRole={role} />
+        <Topbar />
 
         <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
           <div className="flex items-center justify-between">
