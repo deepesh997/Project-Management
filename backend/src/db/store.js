@@ -158,6 +158,60 @@ export class DatabaseStore {
     return null;
   }
 
+  createUser({ email, password, fullName, role = 'team_member', orgId = 'org-acme-101' }) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = this.getUserByEmail(normalizedEmail);
+    if (existing) {
+      return { success: false, reason: 'USER_EXISTS', message: 'A user with this email already exists' };
+    }
+
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(password, salt);
+    const id = `usr-${uuidv4()}`;
+
+    const userRecord = {
+      id,
+      email: normalizedEmail,
+      passwordHash,
+      fullName: fullName || normalizedEmail.split('@')[0],
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    this.users.set(id, userRecord);
+
+    const memId = `mem-${id}`;
+    const membership = {
+      id: memId,
+      orgId,
+      userId: id,
+      role,
+      createdAt: new Date().toISOString(),
+    };
+    this.memberships.set(memId, membership);
+
+    if (pool) {
+      pool.query(
+        'INSERT INTO users (id, email, password_hash, full_name, is_active, created_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING',
+        [id, userRecord.email, passwordHash, userRecord.fullName, true, userRecord.createdAt]
+      ).catch(() => {});
+      pool.query(
+        'INSERT INTO organization_memberships (id, org_id, user_id, role, created_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
+        [memId, orgId, id, role, membership.createdAt]
+      ).catch(() => {});
+    }
+
+    this.logActivity({
+      orgId,
+      entityType: 'AUTH',
+      entityId: id,
+      action: 'USER_REGISTERED',
+      performedBy: id,
+      payload: { email: userRecord.email, role },
+    });
+
+    return { success: true, user: userRecord, membership };
+  }
+
   // --- Team & User Management ---
   listMembers(orgId) {
     const list = [];
