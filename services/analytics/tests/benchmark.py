@@ -4,6 +4,14 @@ Generates 50,000 synthetic task records and benchmarks processing time and memor
 import io
 import time
 import os
+import sys
+from pathlib import Path
+
+# Ensure analytics service root is always on sys.path regardless of execution directory
+_analytics_root = str(Path(__file__).resolve().parent.parent)
+if _analytics_root not in sys.path:
+    sys.path.insert(0, _analytics_root)
+
 import psutil
 from datetime import datetime, timezone, timedelta
 from worksphere_analytics.models import TaskActivityRecord, TaskStatus, TaskPriority

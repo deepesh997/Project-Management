@@ -1,5 +1,13 @@
 """FastAPI Analytics Service for WorkSphere."""
 import io
+import sys
+from pathlib import Path
+
+# Ensure analytics service root is always on sys.path
+_analytics_root = str(Path(__file__).resolve().parent.parent)
+if _analytics_root not in sys.path:
+    sys.path.insert(0, _analytics_root)
+
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Header, UploadFile, File, Query, status
