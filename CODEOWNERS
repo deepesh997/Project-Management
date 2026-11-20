@@ -1,0 +1,8 @@
+# WorkSphere Global Code Ownership
+
+* @worksphere-core-team
+/backend/src/middleware/ @worksphere-security-leads
+/backend/src/db/ @worksphere-database-leads
+/backend/src/modules/tasks/ @worksphere-core-team
+/services/analytics/ @worksphere-data-platform
+/.github/workflows/ @worksphere-devops-leads

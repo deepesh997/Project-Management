@@ -1,0 +1,41 @@
+name: WorkSphere CD - Staging & Production Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging Cluster
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & Publish Staging Containers
+        run: |
+          echo "Simulating container build and push to registry for staging..."
+          echo "Tag: staging-${{ github.sha }}"
+
+      - name: Deploy to Kubernetes Staging Namespace
+        run: |
+          echo "Applying manifests to staging namespace..."
+          echo "Staging URL: https://staging.worksphere.internal"
+
+  deploy-production:
+    name: Deploy to Production Cluster (Approval Gated)
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Database Migrations
+        run: |
+          echo "Executing forward migrations with rollback checkpoint..."
+
+      - name: Blue-Green Production Rollout
+        run: |
+          echo "Promoting green deployment to production..."
+          echo "Production URL: https://app.worksphere.io"

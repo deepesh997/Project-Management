@@ -1,0 +1,16 @@
+node_modules/
+.next/
+dist/
+out/
+build/
+*.log
+.env
+.env.local
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db

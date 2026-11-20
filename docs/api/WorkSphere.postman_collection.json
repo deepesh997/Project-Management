@@ -1,0 +1,112 @@
+{
+  "info": {
+    "name": "WorkSphere Enterprise API Collection",
+    "description": "Complete test and integration collection for WorkSphere Core API & FastAPI Analytics",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api/v1" },
+    { "key": "analyticsUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "tenantId", "value": "org-acme-101" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Org Owner",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@acme.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks & Optimistic Concurrency Control",
+      "item": [
+        {
+          "name": "List Tasks (Tenant Scoped)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenantId}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/tasks", "host": ["{{baseUrl}}"], "path": ["tasks"] }
+          }
+        },
+        {
+          "name": "Update Task with OCC (Success)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Task Title\",\n  \"status\": \"IN_REVIEW\",\n  \"expectedVersion\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/tasks/task-concurrency-target", "host": ["{{baseUrl}}"], "path": ["tasks", "task-concurrency-target"] }
+          }
+        },
+        {
+          "name": "Update Task with Stale Version (Triggers 409 Conflict)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Conflicting Stale Update\",\n  \"status\": \"DONE\",\n  \"expectedVersion\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/tasks/task-concurrency-target", "host": ["{{baseUrl}}"], "path": ["tasks", "task-concurrency-target"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "FastAPI Analytics Service",
+      "item": [
+        {
+          "name": "Get Project Analytics & Health Score",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-API-Key", "value": "ws-analytics-secret-key-prod-2026" }
+            ],
+            "url": {
+              "raw": "{{analyticsUrl}}/analytics/projects/proj-acme-alpha?org_id={{tenantId}}",
+              "host": ["{{analyticsUrl}}"],
+              "path": ["analytics", "projects", "proj-acme-alpha"],
+              "query": [{ "key": "org_id", "value": "{{tenantId}}" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

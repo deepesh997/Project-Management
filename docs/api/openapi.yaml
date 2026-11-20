@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: WorkSphere Multi-Tenant REST API & Analytics Specification
+  description: Official OpenAPI 3.0 specification for WorkSphere platform, covering Node.js core API and Python FastAPI analytics service.
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Core Node.js Express REST API
+  - url: http://localhost:8000/api/v1
+    description: FastAPI Analytics Microservice
+
+paths:
+  /auth/login:
+    post:
+      summary: User Authentication
+      description: Exchanges credentials for JWT access token and refresh token.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: owner@acme.com
+                password:
+                  type: string
+                  example: Password123!
+      responses:
+        '200':
+          description: Successful authentication
+        '401':
+          description: Invalid email or password
+
+  /tasks:
+    get:
+      summary: List Tasks with Tenant Isolation
+      tags: [Tasks]
+      parameters:
+        - in: header
+          name: X-Tenant-ID
+          required: true
+          schema:
+            type: string
+            example: org-acme-101
+      responses:
+        '200':
+          description: List of tasks for current organization
+        '403':
+          description: Cross-tenant access forbidden
+    post:
+      summary: Create Task
+      tags: [Tasks]
+      responses:
+        '201':
+          description: Task created with version 1
+
+  /tasks/{id}:
+    get:
+      summary: Get Task Details
+      tags: [Tasks]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task details
+        '404':
+          description: Task not found in tenant
+    put:
+      summary: Update Task with Optimistic Concurrency Control (OCC)
+      description: |
+        Requires `expectedVersion`. If the server record has been modified by another user,
+        returns HTTP 409 Conflict with diff details.
+      tags: [Tasks]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedVersion]
+              properties:
+                title:
+                  type: string
+                status:
+                  type: string
+                  enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE, BLOCKED]
+                expectedVersion:
+                  type: integer
+                  description: The version the client read before editing
+                  example: 1
+      responses:
+        '200':
+          description: Task updated and version incremented
+        '409':
+          description: Stale update rejected due to concurrent edit collision
+
+  /integrations/webhooks/incoming:
+    post:
+      summary: Ingest Third-Party Webhook
+      description: Verifies HMAC-SHA256 signature and timestamp to prevent replay attacks and duplicate processing.
+      tags: [Integrations]
+      parameters:
+        - in: header
+          name: x-worksphere-signature
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: x-worksphere-timestamp
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: idempotency-key
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook verified and processed
+
+  /analytics/projects/{project_id}:
+    get:
+      summary: Fetch Project Analytics (FastAPI)
+      tags: [Analytics]
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: org_id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-API-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Calculated health score, cycle time, and workload distribution
