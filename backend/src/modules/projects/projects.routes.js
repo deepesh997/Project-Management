@@ -61,3 +61,32 @@ projectsRouter.post(
     return res.status(201).json({ data: project });
   }
 );
+
+projectsRouter.get('/:id', (req, res) => {
+  const project = db.projects.get(req.params.id);
+  if (!project || project.orgId !== req.orgId) {
+    return res.status(404).json({ error: { code: 'PROJECT_NOT_FOUND', message: 'Project not found' } });
+  }
+  return res.json({ data: project });
+});
+
+projectsRouter.delete(
+  '/:id',
+  authorizeRoles('platform_admin', 'org_owner'),
+  (req, res) => {
+    const project = db.projects.get(req.params.id);
+    if (!project || project.orgId !== req.orgId) {
+      return res.status(404).json({ error: { code: 'PROJECT_NOT_FOUND', message: 'Project not found' } });
+    }
+    db.projects.delete(req.params.id);
+    db.logActivity({
+      orgId: req.orgId,
+      entityType: 'PROJECT',
+      entityId: req.params.id,
+      action: 'DELETED',
+      performedBy: req.user.id,
+      payload: { name: project.name },
+    });
+    return res.json({ success: true, message: 'Project deleted' });
+  }
+);

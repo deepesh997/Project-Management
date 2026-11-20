@@ -239,11 +239,10 @@ export default function TeamPage() {
 
           {notification && (
             <div
-              className={`p-3.5 rounded-[10px] text-xs flex justify-between items-center shadow-xs ${
-                notification.type === 'success'
+              className={`p-3.5 rounded-[10px] text-xs flex justify-between items-center shadow-xs ${notification.type === 'success'
                   ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
                   : 'bg-rose-50 text-rose-900 border border-rose-200'
-              }`}
+                }`}
             >
               <span>{notification.message}</span>
               <button onClick={() => setNotification(null)} className="font-bold text-xs ml-2">

@@ -427,6 +427,23 @@ export class DatabaseStore {
     return { success: true, task: { ...updated } };
   }
 
+  deleteTask(taskId, orgId, actorId) {
+    const current = this.tasks.get(taskId);
+    if (!current) return { success: false, reason: 'NOT_FOUND' };
+    if (current.orgId !== orgId) return { success: false, reason: 'FORBIDDEN' };
+
+    this.tasks.delete(taskId);
+    this.logActivity({
+      orgId,
+      entityType: 'TASK',
+      entityId: taskId,
+      action: 'DELETED',
+      performedBy: actorId,
+      payload: { title: current.title },
+    });
+    return { success: true };
+  }
+
   // --- Audit Trail ---
   logActivity({ orgId, entityType, entityId, action, performedBy, payload }) {
     const entry = {

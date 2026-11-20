@@ -168,3 +168,20 @@ tasksRouter.put(
     });
   }
 );
+
+// Delete Task
+tasksRouter.delete(
+  '/:id',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager'),
+  async (req, res) => {
+    const result = db.deleteTask(req.params.id, req.orgId, req.user.id);
+    if (!result.success) {
+      if (result.reason === 'NOT_FOUND') {
+        return res.status(404).json({ error: { code: 'TASK_NOT_FOUND', message: 'Task not found' } });
+      }
+      return res.status(403).json({ error: { code: 'CROSS_TENANT_FORBIDDEN', message: 'Unauthorized' } });
+    }
+    realtimeBus.broadcast(req.orgId, 'TASK_DELETED', { taskId: req.params.id });
+    return res.json({ success: true, message: 'Task deleted successfully' });
+  }
+);
