@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { ConflictResolutionModal } from '../../components/tasks/ConflictResolutionModal';
-import { TaskDetailDrawer } from '../../components/tasks/TaskDetailDrawer';
 import { ApiClient } from '../../lib/api';
 import { Task, Project, OCCConflictError, TaskStatus, TaskPriority } from '../../types';
 
@@ -22,6 +22,7 @@ const KANBAN_COLUMNS: { id: TaskStatus; label: string; dotColor: string }[] = [
 ];
 
 export default function TasksPage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [conflict, setConflict] = useState<OCCConflictError | null>(null);
@@ -30,15 +31,6 @@ export default function TasksPage() {
   // Drag and drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<TaskStatus | null>(null);
-
-  // Edit Task Drawer state
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editStatus, setEditStatus] = useState<TaskStatus>('TODO');
-  const [editPriority, setEditPriority] = useState<TaskPriority>('MEDIUM');
-  const [editEstimatedHours, setEditEstimatedHours] = useState<number>(8);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Create Task Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -137,72 +129,13 @@ export default function TasksPage() {
     }
   };
 
-  // --- Edit Task Handlers ---
+  // --- Navigate to Full-Screen Task Detail View ---
   const handleEditClick = (task: Task) => {
-    setEditingTask(task);
-    setEditTitle(task.title);
-    setEditDescription(task.description || '');
-    setEditStatus(task.status);
-    setEditPriority(task.priority);
-    setEditEstimatedHours(task.estimatedHours || 8);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingTask) return;
-    setIsSaving(true);
-    const res = await ApiClient.updateTaskWithOCC(
-      editingTask.id,
-      {
-        title: editTitle,
-        description: editDescription,
-        status: editStatus,
-        priority: editPriority,
-        estimatedHours: Number(editEstimatedHours),
-      },
-      editingTask.version
-    );
-    setIsSaving(false);
-
-    if (res.conflict) {
-      setConflict(res.conflict);
-    } else if (res.task) {
-      showToast(`Task updated successfully to Version ${res.task.version}`);
-      setEditingTask(null);
-      loadInitialData();
-    }
-  };
-
-  const handleDeleteTask = async () => {
-    if (!editingTask) return;
-    if (!confirm(`Are you sure you want to delete task "${editingTask.title}"?`)) return;
-
-    const success = await ApiClient.deleteTask(editingTask.id);
-    if (success) {
-      setTasks((prev) => prev.filter((t) => t.id !== editingTask.id));
-      setEditingTask(null);
-      showToast('Task deleted successfully');
-    }
-  };
-
-  // Concurrency Race Simulation Trigger
-  const handleSimulateRaceCondition = async () => {
-    if (!editingTask) return;
-    // We intentionally pass a stale expectedVersion (version - 1) to trigger a 409 conflict
-    const staleVersion = Math.max(0, editingTask.version - 1);
-    const res = await ApiClient.updateTaskWithOCC(
-      editingTask.id,
-      { title: `${editTitle} (Conflicting User B Edit)`, status: 'DONE' },
-      staleVersion
-    );
-
-    if (res.conflict) {
-      setConflict(res.conflict);
-    }
+    router.push(`/tasks/${task.id}`);
   };
 
   const handleReloadLatest = () => {
     setConflict(null);
-    setEditingTask(null);
     loadInitialData();
     showToast('Reloaded authoritative server version. Silent overwrite avoided.');
   };
@@ -517,29 +450,6 @@ export default function TasksPage() {
                 </form>
               </div>
             </div>
-          )}
-
-          {/* Task Detail & Submission History Drawer */}
-          {editingTask && (
-            <TaskDetailDrawer
-              task={editingTask}
-              onClose={() => setEditingTask(null)}
-              onTaskUpdated={(updatedTask) => {
-                setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
-                setEditingTask(updatedTask);
-              }}
-              onTaskDeleted={async (taskId) => {
-                if (!confirm('Are you sure you want to delete this task?')) return;
-                const ok = await ApiClient.deleteTask(taskId);
-                if (ok) {
-                  setTasks((prev) => prev.filter((t) => t.id !== taskId));
-                  setEditingTask(null);
-                  showToast('Task deleted successfully');
-                }
-              }}
-              onConflict={(err) => setConflict(err)}
-              showToast={showToast}
-            />
           )}
 
           {/* OCC Conflict Resolution Modal */}

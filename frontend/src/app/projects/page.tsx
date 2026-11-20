@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
-import { TaskDetailDrawer } from '../../components/tasks/TaskDetailDrawer';
 import { ConflictResolutionModal } from '../../components/tasks/ConflictResolutionModal';
 import { ApiClient } from '../../lib/api';
 import { Project, Task, TaskStatus, TaskPriority, OCCConflictError } from '../../types';
@@ -35,13 +35,13 @@ const KANBAN_COLUMNS: { id: TaskStatus; label: string; dotColor: string }[] = [
 ];
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectWithMilestones[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedProject, setSelectedProject] = useState<ProjectWithMilestones | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
-  // Task detail & OCC drawer state
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  // OCC conflict resolution state
   const [conflict, setConflict] = useState<OCCConflictError | null>(null);
 
   // Drag and drop state
@@ -497,7 +497,7 @@ export default function ProjectsPage() {
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, task.id)}
                                 onDragEnd={handleDragEnd}
-                                onClick={() => setActiveTask(task)}
+                                onClick={() => router.push(`/tasks/${task.id}?returnTo=/projects`)}
                                 className={`bg-white p-4 rounded-[12px] border border-black/[0.06] shadow-apple-sm hover:shadow-apple-md hover:border-[#007AFF]/40 cursor-pointer transition-all duration-150 space-y-2.5 ${
                                   isBeingDragged ? 'opacity-40 scale-95 border-blue-400' : 'active:scale-[0.99]'
                                 }`}
@@ -569,7 +569,7 @@ export default function ProjectsPage() {
                         return (
                           <tr
                             key={task.id}
-                            onClick={() => setActiveTask(task)}
+                            onClick={() => router.push(`/tasks/${task.id}?returnTo=/projects`)}
                             className="hover:bg-blue-50/40 cursor-pointer transition-colors group"
                           >
                             <td className="py-3 px-4 font-mono text-[11px] text-[#007AFF] font-medium whitespace-nowrap">
@@ -607,7 +607,7 @@ export default function ProjectsPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setActiveTask(task);
+                                  router.push(`/tasks/${task.id}?returnTo=/projects`);
                                 }}
                                 className="px-2.5 py-1 text-xs text-[#007AFF] hover:bg-blue-50 rounded-[6px] font-medium transition-colors"
                               >
@@ -993,36 +993,12 @@ export default function ProjectsPage() {
             </div>
           )}
 
-          {/* Task Detail & Submission History Drawer */}
-          {activeTask && (
-            <TaskDetailDrawer
-              task={activeTask}
-              onClose={() => setActiveTask(null)}
-              onTaskUpdated={(updatedTask) => {
-                setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
-                setActiveTask(updatedTask);
-              }}
-              onTaskDeleted={async (taskId) => {
-                if (!confirm('Are you sure you want to delete this task?')) return;
-                const ok = await ApiClient.deleteTask(taskId);
-                if (ok) {
-                  setTasks((prev) => prev.filter((t) => t.id !== taskId));
-                  setActiveTask(null);
-                  showToast('Task deleted successfully');
-                }
-              }}
-              onConflict={(err) => setConflict(err)}
-              showToast={showToast}
-            />
-          )}
-
           {/* OCC Conflict Resolution Modal */}
           <ConflictResolutionModal
             conflict={conflict}
             onClose={() => setConflict(null)}
             onReloadLatest={() => {
               setConflict(null);
-              setActiveTask(null);
               loadAllData();
               showToast('Reloaded authoritative server version.');
             }}

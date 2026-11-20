@@ -60,8 +60,8 @@ export class ApiClient {
           id: 'task-auth-sso',
           projectId: 'proj-acme-alpha',
           orgId: 'org-acme-101',
-          title: 'Implement OAuth2 / OIDC Single Sign-On',
-          description: 'Support Google Workspace, Microsoft Entra ID and Okta enterprise SSO.',
+          title: 'Implement SAML 2.0 / OIDC Single Sign-On',
+          description: 'Enterprise SSO bridge with Okta and Google Workspace.',
           status: 'TODO',
           priority: 'MEDIUM',
           assigneeId: null,
@@ -74,23 +74,71 @@ export class ApiClient {
           updatedAt: new Date().toISOString(),
         },
         {
-          id: 'task-sse-stream',
-          projectId: 'proj-acme-beta',
+          id: 'task-101',
+          projectId: 'proj-acme-alpha',
           orgId: 'org-acme-101',
-          title: 'Server-Sent Events Realtime Bus',
-          description: 'Stream atomic OCC changes and task modifications to active browser tabs.',
+          title: 'REST & Server-Sent Events (SSE) Streaming Pipeline',
+          description: 'Production event streaming hub for real-time task mutations and analytics feeds.',
           status: 'DONE',
           priority: 'HIGH',
           assigneeId: 'usr-member-1',
-          creatorId: 'usr-owner-1',
-          dueDate: '2026-11-20',
+          creatorId: 'usr-pm-1',
+          dueDate: '2026-11-15',
           estimatedHours: 12.0,
-          actualHours: 11.5,
+          actualHours: 10.0,
           version: 2,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
+        {
+          id: 'task-102',
+          projectId: 'proj-acme-alpha',
+          orgId: 'org-acme-101',
+          title: 'Optimistic Concurrency Control (OCC) Architecture',
+          description: 'Enforce atomic version checks to reject silent overwrites.',
+          status: 'IN_PROGRESS',
+          priority: 'URGENT',
+          assigneeId: 'usr-pm-1',
+          creatorId: 'usr-pm-1',
+          dueDate: '2026-11-25',
+          estimatedHours: 20.0,
+          actualHours: 14.0,
+          version: 3,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 'task-103',
+          projectId: 'proj-acme-alpha',
+          orgId: 'org-acme-101',
+          title: 'HMAC Webhook Ingestion & Replay Protection',
+          description: 'Verify SHA256 HMAC signatures with 300-second timestamp tolerance and Redis deduplication.',
+          status: 'TODO',
+          priority: 'MEDIUM',
+          assigneeId: 'usr-member-1',
+          creatorId: 'usr-owner-1',
+          dueDate: '2026-12-10',
+          estimatedHours: 8.0,
+          actualHours: 0.0,
+          version: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
       ];
+    }
+  }
+
+  static async getTaskById(id: string): Promise<Task | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error('Task not found');
+      const json = await res.json();
+      return json.data;
+    } catch {
+      const all = await this.getTasks();
+      return all.find((t) => t.id === id) || null;
     }
   }
 
