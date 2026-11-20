@@ -5,6 +5,7 @@
  */
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import { pool, testConnection } from './pool.js';
 
 export class DatabaseStore {
   constructor() {
@@ -23,6 +24,17 @@ export class DatabaseStore {
     this.activityLogs = [];
     this.revokedTokens = new Set();
     this.processedEvents = new Map(); // idempotency_key -> { status, payload, createdAt }
+  }
+
+  async checkPostgresConnection() {
+    const status = await testConnection();
+    if (status.connected) {
+      console.log(`[DatabaseStore] Connected to Supabase PostgreSQL cluster (${status.database})`);
+      this.isLivePostgres = true;
+    } else {
+      console.log(`[DatabaseStore] Notice: ${status.message} Running with resilient in-memory engine.`);
+      this.isLivePostgres = false;
+    }
   }
 
   async seed() {
@@ -326,4 +338,5 @@ export class DatabaseStore {
 }
 
 export const db = new DatabaseStore();
+await db.checkPostgresConnection();
 await db.seed();

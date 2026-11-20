@@ -4,10 +4,16 @@
   "private": true,
   "description": "WorkSphere Enterprise Multi-Tenant Platform Monorepo",
   "scripts": {
+    "dev": "npm run dev:frontend",
+    "dev:backend": "npm --prefix backend start",
+    "dev:frontend": "npm --prefix frontend dev",
+    "dev:analytics": "uvicorn api.main:app --app-dir services/analytics --port 8000 --reload",
     "test": "npm run test:backend && npm run test:analytics && npm run test:frontend",
     "test:backend": "npm --prefix backend test",
     "test:analytics": "pytest services/analytics",
     "test:frontend": "npm --prefix frontend test",
-    "benchmark": "python services/analytics/tests/benchmark.py"
+    "benchmark": "python services/analytics/tests/benchmark.py",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:seed": "npm --prefix backend run db:seed"
   }
 }

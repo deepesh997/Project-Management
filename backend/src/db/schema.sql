@@ -23,13 +23,18 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- 3. Organization Memberships (RBAC mapping)
-CREATE TYPE user_role AS ENUM (
-    'platform_admin',
-    'org_owner',
-    'project_manager',
-    'team_member',
-    'auditor'
-);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM (
+            'platform_admin',
+            'org_owner',
+            'project_manager',
+            'team_member',
+            'auditor'
+        );
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS organization_memberships (
     id VARCHAR(64) PRIMARY KEY,

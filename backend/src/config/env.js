@@ -11,7 +11,13 @@ export const config = {
     refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
   },
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/worksphere',
+    host: process.env.DB_HOST || 'aws-0-ap-northeast-2.pooler.supabase.com',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    database: process.env.DB_NAME || 'postgres',
+    user: process.env.DB_USER || 'postgres.qiquvsipdeorewhatbou',
+    password: process.env.DB_PASSWORD || '',
+    ssl: process.env.DB_SSL !== 'false' ? { rejectUnauthorized: false } : false,
+    url: process.env.DATABASE_URL || '',
     useMemoryFallback: process.env.USE_MEMORY_FALLBACK !== 'false',
   },
   redis: {
