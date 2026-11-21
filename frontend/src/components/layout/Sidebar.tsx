@@ -146,34 +146,34 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`bg-[#1C1C1E] text-white/90 flex flex-col border-r border-white/10 shrink-0 select-none transition-all duration-300 ease-in-out ${
+      className={`bg-[#121215] text-white/90 flex flex-col border-r border-white/[0.08] shrink-0 select-none transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-[68px]' : 'w-64'
       }`}
     >
       {/* Brand Header */}
       <div
-        className={`h-14 flex items-center border-b border-white/[0.08] transition-all duration-300 ${
+        className={`h-14 flex items-center border-b border-white/[0.06] transition-all duration-300 ${
           isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
         }`}
       >
         <Link href="/" className="flex items-center space-x-2.5 group overflow-hidden">
-          <div className="w-7 h-7 rounded-[8px] bg-gradient-to-b from-[#007AFF] to-[#0062CC] flex items-center justify-center font-bold text-white text-xs shadow-sm shadow-blue-500/30 border border-white/20 shrink-0">
+          <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-[#007AFF] via-[#0062CC] to-[#5856D6] flex items-center justify-center font-bold text-white text-xs shadow-md shadow-blue-500/25 border border-white/20 shrink-0">
             WS
           </div>
           {!isCollapsed && (
             <div className="flex flex-col truncate">
-              <span className="font-semibold text-sm tracking-tight text-white group-hover:text-blue-400 transition-colors truncate">
+              <span className="font-bold text-sm tracking-tight text-white group-hover:text-blue-400 transition-colors truncate">
                 WorkSphere
               </span>
-              <span className="text-[10px] text-white/50 tracking-normal font-mono -mt-0.5 truncate">
-                Enterprise
+              <span className="text-[10px] text-white/40 tracking-normal font-mono -mt-0.5 truncate">
+                Enterprise Cloud
               </span>
             </div>
           )}
         </Link>
 
         {!isCollapsed && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-[5px] bg-white/10 text-white/70 font-mono font-medium border border-white/10">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.08] text-white/70 font-mono font-medium border border-white/10">
             v2.0
           </span>
         )}
@@ -190,7 +190,7 @@ export function Sidebar() {
           return (
             <div key={section.title} className="space-y-1">
               {!isCollapsed ? (
-                <div className="px-2.5 text-[11px] font-semibold text-white/40 uppercase tracking-wider">
+                <div className="px-2.5 text-[10px] font-bold text-white/35 uppercase tracking-wider">
                   {section.title}
                 </div>
               ) : sIdx > 0 ? (
@@ -205,24 +205,24 @@ export function Sidebar() {
                       key={item.href}
                       href={item.href}
                       title={isCollapsed ? item.label : undefined}
-                      className={`flex items-center rounded-[8px] transition-all duration-150 relative ${
-                        isCollapsed ? 'justify-center p-2' : 'justify-between px-2.5 py-1.5'
+                      className={`flex items-center rounded-[9px] transition-all duration-150 relative ${
+                        isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
                       } ${
                         isActive
-                          ? 'bg-[#007AFF] text-white shadow-sm'
-                          : 'text-white/75 hover:bg-white/[0.08] hover:text-white'
+                          ? 'bg-gradient-to-r from-[#007AFF] to-[#0062CC] text-white shadow-md shadow-blue-500/25 font-semibold'
+                          : 'text-white/70 hover:bg-white/[0.07] hover:text-white font-medium'
                       }`}
                     >
                       <div className="flex items-center space-x-2.5">
                         <span className={isActive ? 'text-white' : 'text-white/60'}>
                           {item.icon}
                         </span>
-                        {!isCollapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
+                        {!isCollapsed && <span className="text-xs truncate">{item.label}</span>}
                       </div>
 
                       {!isCollapsed && item.badge && (
                         <span
-                          className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-semibold uppercase ${
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold uppercase ${
                             isActive
                               ? 'bg-white/20 text-white'
                               : 'bg-white/10 text-white/60'
@@ -245,7 +245,7 @@ export function Sidebar() {
       </nav>
 
       {/* Authenticated User Profile Capsule */}
-      <div className="p-2.5 border-t border-white/[0.08] bg-black/20">
+      <div className="p-3 border-t border-white/[0.08] bg-black/30">
         {!isCollapsed ? (
           <div className="space-y-2.5">
             <div className="flex items-center space-x-2.5 px-1">
