@@ -55,7 +55,6 @@ export function Sidebar() {
           label: 'Tasks & Kanban',
           href: '/tasks',
           roles: ['platform_admin', 'org_owner', 'project_manager', 'team_member'],
-          badge: 'OCC',
           icon: (
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 6h16M4 12h10M4 18h14" />
@@ -100,7 +99,6 @@ export function Sidebar() {
           label: 'FastAPI Analytics',
           href: '/analytics',
           roles: ['platform_admin', 'org_owner', 'project_manager'],
-          badge: 'Stream',
           icon: (
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10" />
@@ -121,9 +119,10 @@ export function Sidebar() {
           ),
         },
         {
-          label: 'Tenant Settings',
+          label: 'Settings & Config',
           href: '/settings',
-          roles: ['platform_admin', 'org_owner'],
+          roles: ['platform_admin', 'org_owner', 'project_manager', 'team_member', 'auditor'],
+          badge: 'Dev Hub',
           icon: (
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />

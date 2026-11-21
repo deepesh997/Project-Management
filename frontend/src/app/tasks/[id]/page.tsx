@@ -288,16 +288,6 @@ export default function TaskDetailPage() {
             <div className="flex items-center space-x-2">
               <button
                 type="button"
-                onClick={handleSimulateConflict}
-                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-[8px] text-xs font-semibold transition-colors active:scale-[0.98] shadow-xs flex items-center space-x-1"
-                title="Test Optimistic Concurrency Control"
-              >
-                <span>⚡</span>
-                <span>Test Race (409)</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={handleDeleteTask}
                 className="px-3 py-1.5 text-xs text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-[8px] transition-colors font-medium border border-transparent hover:border-rose-200"
               >
@@ -354,7 +344,7 @@ export default function TaskDetailPage() {
                       {task.id}
                     </span>
                     <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                      OCC v{task.version}
+                      Revision v{task.version}
                     </span>
                     <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${statusBadges[task.status]?.class}`}>
                       {statusBadges[task.status]?.label || task.status}

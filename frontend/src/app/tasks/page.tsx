@@ -259,7 +259,7 @@ export default function TasksPage() {
                 Tasks & Workflow Management
               </h2>
               <p className="text-xs text-[#6E6E73] mt-0.5">
-                Organize deliverables, track OCC concurrency versions, and collaborate in real-time.
+                Organize deliverables, track project progress milestones, and collaborate in real-time.
               </p>
             </div>
 

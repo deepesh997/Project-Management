@@ -132,7 +132,7 @@ export function Topbar() {
                   className="w-full flex items-center space-x-2 px-3 py-1.5 text-[#1D1D1F] hover:bg-black/[0.04] rounded-[8px] transition-colors"
                 >
                   <span>⚙️</span>
-                  <span>Tenant Settings</span>
+                  <span>Settings &amp; Developer Hub</span>
                 </Link>
                 <Link
                   href="/audit"
