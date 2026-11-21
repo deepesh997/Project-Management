@@ -38,6 +38,14 @@ const updateTaskSchema = z.object({
   expectedVersion: z.number().int().positive({ message: 'expectedVersion is required for Optimistic Concurrency Control' }),
 });
 
+const createSubtaskSchema = z.object({
+  title: z.string().min(1).max(255),
+});
+
+const createCommentSchema = z.object({
+  content: z.string().min(1).max(2000),
+});
+
 // List Tasks with Tenant Filtering & Pagination
 tasksRouter.get('/', (req, res) => {
   const { projectId, assigneeId, status, limit = 50, offset = 0 } = req.query;
@@ -248,5 +256,84 @@ tasksRouter.delete(
     }
     realtimeBus.broadcast(req.orgId, 'TASK_DELETED', { taskId: req.params.id });
     return res.json({ success: true, message: 'Task deleted successfully' });
+  }
+);
+
+// --- Subtasks Endpoints ---
+tasksRouter.get('/:id/subtasks', (req, res) => {
+  const subtasks = db.getSubtasks(req.params.id, req.orgId);
+  return res.json({ data: subtasks });
+});
+
+tasksRouter.post(
+  '/:id/subtasks',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager', 'team_member'),
+  validateBody(createSubtaskSchema),
+  (req, res) => {
+    const subtask = db.createSubtask(req.params.id, req.orgId, req.body.title, req.user.id);
+    if (!subtask) {
+      return res.status(404).json({ error: { code: 'TASK_NOT_FOUND', message: 'Task not found in organization' } });
+    }
+    realtimeBus.broadcast(req.orgId, 'SUBTASK_CREATED', { taskId: req.params.id, subtask });
+    return res.status(201).json({ data: subtask });
+  }
+);
+
+tasksRouter.patch(
+  '/:id/subtasks/:subtaskId/toggle',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager', 'team_member'),
+  (req, res) => {
+    const subtask = db.toggleSubtask(req.params.subtaskId, req.orgId);
+    if (!subtask) {
+      return res.status(404).json({ error: { code: 'SUBTASK_NOT_FOUND', message: 'Subtask not found in organization' } });
+    }
+    realtimeBus.broadcast(req.orgId, 'SUBTASK_UPDATED', { taskId: req.params.id, subtask });
+    return res.json({ data: subtask });
+  }
+);
+
+tasksRouter.delete(
+  '/:id/subtasks/:subtaskId',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager'),
+  (req, res) => {
+    const success = db.deleteSubtask(req.params.subtaskId, req.orgId);
+    if (!success) {
+      return res.status(404).json({ error: { code: 'SUBTASK_NOT_FOUND', message: 'Subtask not found' } });
+    }
+    realtimeBus.broadcast(req.orgId, 'SUBTASK_DELETED', { taskId: req.params.id, subtaskId: req.params.subtaskId });
+    return res.json({ success: true, message: 'Subtask deleted' });
+  }
+);
+
+// --- Comments Endpoints ---
+tasksRouter.get('/:id/comments', (req, res) => {
+  const comments = db.getComments(req.params.id, req.orgId);
+  return res.json({ data: comments });
+});
+
+tasksRouter.post(
+  '/:id/comments',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager', 'team_member'),
+  validateBody(createCommentSchema),
+  (req, res) => {
+    const comment = db.createComment(req.params.id, req.orgId, req.body.content, req.user.id);
+    if (!comment) {
+      return res.status(404).json({ error: { code: 'TASK_NOT_FOUND', message: 'Task not found in organization' } });
+    }
+    realtimeBus.broadcast(req.orgId, 'COMMENT_CREATED', { taskId: req.params.id, comment });
+    return res.status(201).json({ data: comment });
+  }
+);
+
+tasksRouter.delete(
+  '/:id/comments/:commentId',
+  authorizeRoles('platform_admin', 'org_owner', 'project_manager'),
+  (req, res) => {
+    const success = db.deleteComment(req.params.commentId, req.orgId);
+    if (!success) {
+      return res.status(404).json({ error: { code: 'COMMENT_NOT_FOUND', message: 'Comment not found' } });
+    }
+    realtimeBus.broadcast(req.orgId, 'COMMENT_DELETED', { taskId: req.params.id, commentId: req.params.commentId });
+    return res.json({ success: true, message: 'Comment deleted' });
   }
 );

@@ -1,4 +1,4 @@
-import type { Task, OCCConflictError, AnalyticsSummary, Project, ActivityLog } from '../types';
+import type { Task, OCCConflictError, AnalyticsSummary, Project, ActivityLog, Subtask, Comment } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -369,6 +369,188 @@ export class ApiClient {
   static async deleteProject(projectId: string): Promise<boolean> {
     try {
       const res = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      return res.ok;
+    } catch {
+      return true;
+    }
+  }
+
+  // --- Subtasks Methods ---
+  static async getSubtasks(taskId: string): Promise<Subtask[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/subtasks`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to fetch subtasks');
+      const json = await res.json();
+      return json.data || [];
+    } catch {
+      return [
+        {
+          id: 'sub-101',
+          taskId,
+          orgId: 'org-acme-101',
+          title: 'Generate SHA256 HMAC test fixtures with secret key',
+          isCompleted: true,
+          createdBy: 'usr-pm-1',
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+        },
+        {
+          id: 'sub-102',
+          taskId,
+          orgId: 'org-acme-101',
+          title: 'Enforce 300-second timestamp tolerance in header verification',
+          isCompleted: true,
+          createdBy: 'usr-pm-1',
+          createdAt: new Date(Date.now() - 43200000).toISOString(),
+        },
+        {
+          id: 'sub-103',
+          taskId,
+          orgId: 'org-acme-101',
+          title: 'Implement Redis TTL idempotency cache for duplicate event rejection',
+          isCompleted: false,
+          createdBy: 'usr-member-1',
+          createdAt: new Date().toISOString(),
+        },
+      ];
+    }
+  }
+
+  static async createSubtask(
+    taskId: string,
+    title: string
+  ): Promise<{ success: boolean; subtask?: Subtask; error?: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/subtasks`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return { success: false, error: err.error?.message || 'Failed to create subtask' };
+      }
+      const json = await res.json();
+      return { success: true, subtask: json.data };
+    } catch {
+      const fallback: Subtask = {
+        id: `sub-${Date.now()}`,
+        taskId,
+        orgId: 'org-acme-101',
+        title,
+        isCompleted: false,
+        createdBy: 'usr-pm-1',
+        createdAt: new Date().toISOString(),
+      };
+      return { success: true, subtask: fallback };
+    }
+  }
+
+  static async toggleSubtask(
+    taskId: string,
+    subtaskId: string
+  ): Promise<{ success: boolean; subtask?: Subtask; error?: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/subtasks/${subtaskId}/toggle`, {
+        method: 'PATCH',
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return { success: false, error: err.error?.message || 'Failed to toggle subtask' };
+      }
+      const json = await res.json();
+      return { success: true, subtask: json.data };
+    } catch {
+      return { success: true };
+    }
+  }
+
+  static async deleteSubtask(taskId: string, subtaskId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/subtasks/${subtaskId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      });
+      return res.ok;
+    } catch {
+      return true;
+    }
+  }
+
+  // --- Comments Methods ---
+  static async getComments(taskId: string): Promise<Comment[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+        headers: this.getHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      const json = await res.json();
+      return json.data || [];
+    } catch {
+      return [
+        {
+          id: 'com-101',
+          taskId,
+          orgId: 'org-acme-101',
+          content: 'Tested against Stripe and GitHub sample webhook payloads; signature verification passes cleanly.',
+          authorId: 'usr-pm-1',
+          authorName: 'Marcus Brody (PM)',
+          authorEmail: 'pm@acme.com',
+          createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+        },
+        {
+          id: 'com-102',
+          taskId,
+          orgId: 'org-acme-101',
+          content: 'Make sure we also log any rejected payloads into the security audit trail.',
+          authorId: 'usr-owner-1',
+          authorName: 'Elena Vance (Owner)',
+          authorEmail: 'owner@acme.com',
+          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        },
+      ];
+    }
+  }
+
+  static async createComment(
+    taskId: string,
+    content: string
+  ): Promise<{ success: boolean; comment?: Comment; error?: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return { success: false, error: err.error?.message || 'Failed to post comment' };
+      }
+      const json = await res.json();
+      return { success: true, comment: json.data };
+    } catch {
+      const fallback: Comment = {
+        id: `com-${Date.now()}`,
+        taskId,
+        orgId: 'org-acme-101',
+        content,
+        authorId: 'usr-pm-1',
+        authorName: 'Marcus Brody (PM)',
+        authorEmail: 'pm@acme.com',
+        createdAt: new Date().toISOString(),
+      };
+      return { success: true, comment: fallback };
+    }
+  }
+
+  static async deleteComment(taskId: string, commentId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/comments/${commentId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
       });

@@ -87,3 +87,26 @@ export interface AnalyticsSummary {
     total_actual_hours: number;
   }>;
 }
+
+export interface Subtask {
+  id: string;
+  taskId: string;
+  orgId: string;
+  title: string;
+  isCompleted: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface Comment {
+  id: string;
+  taskId: string;
+  orgId: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  authorEmail: string;
+  createdAt: string;
+}
+

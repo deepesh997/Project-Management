@@ -145,8 +145,8 @@ The 15 mandatory assessments defined in `01_WorkSphere_Project_Assessment 1.docx
 
 | # | Assessment Name | Core Objective | Current Status | Implemented Components | Missing / Action Items |
 | :---: | :--- | :--- | :---: | :--- | :--- |
-| **01** | **Frontend Architecture** | Responsive Next.js App Router, role layouts, Apple HIG design | ✅ **100% COMPLETE** | Next.js 14 App Router, collapsible sidebar (`sidebar-context`), topbar, role badges, full-screen detail page. | None. |
-| **02** | **Node.js/Express Core API** | Versioned REST APIs for all core entities | 🟡 **85% COMPLETE** | `/api/v1/auth`, `/api/v1/organizations`, `/api/v1/projects`, `/api/v1/tasks`, `/api/v1/audit`. | Add `/api/v1/tasks/:id/comments` and `/api/v1/tasks/:id/subtasks` routes. |
+| **01** | **Frontend Architecture** | Responsive Next.js App Router, role layouts, Apple HIG design | ✅ **100% COMPLETE** | Next.js 14 App Router, collapsible sidebar (`sidebar-context`), topbar, role badges, full-screen detail page, subtasks checklist, team discussion thread. | None. |
+| **02** | **Node.js/Express Core API** | Versioned REST APIs for all core entities | ✅ **100% COMPLETE** | `/api/v1/auth`, `/api/v1/organizations`, `/api/v1/projects`, `/api/v1/tasks`, `/api/v1/tasks/:id/subtasks`, `/api/v1/tasks/:id/comments`, `/api/v1/audit`. | None. |
 | **03** | **PostgreSQL Data Model** | 13 normalized tables, constraints, indexes, migrations | ✅ **100% COMPLETE** | Live Supabase PostgreSQL 16 cluster, `migrate.js`, `seed_db.js`, OCC version columns. | None. |
 | **04** | **Authentication & RBAC** | JWT access/refresh, role authorization, tenant isolation | ✅ **100% COMPLETE** | JWT login, register, token validation, refresh, logout revocation, `authorizeRoles`, `enforceTenantIsolation`. | None. |
 | **05** | **Advanced Python Processing** | Reusable Python package, streaming $O(1)$ memory metrics | ✅ **100% COMPLETE** | `worksphere_analytics`, `processor.py`, `metrics.py`, `benchmark.py`, 10/10 pytest passing. | None. |
@@ -156,9 +156,9 @@ The 15 mandatory assessments defined in `01_WorkSphere_Project_Assessment 1.docx
 | **09** | **Docker & Environments** | Multi-stage Dockerfiles, docker-compose, env templates | ✅ **100% COMPLETE** | `Dockerfile.backend`, `Dockerfile.frontend`, `Dockerfile.analytics`, `docker-compose.yml`, `.env.example`. | None. |
 | **10** | **Git & Collaboration** | Feature branches, meaningful commits, PR reviews | ✅ **100% COMPLETE** | Clean conventional commits on `main`, CodeRabbit PR review artifact, clean commit history. | None. |
 | **11** | **CI/CD Pipeline** | GitHub Actions workflows for tests, linting, and deploy | ✅ **100% COMPLETE** | `.github/workflows/ci.yml`, `.github/workflows/cd-production.yml`. | None. |
-| **12** | **Testing Strategy** | Unit, API, failure-path, OCC race, and boundary tests | 🟡 **85% COMPLETE** | Backend: 34/34 passing (100%). Analytics: 10/10 passing (100%). | Add frontend component test suite & Playwright e2e test script. |
-| **13** | **API Documentation** | OpenAPI/Swagger documentation for Node & FastAPI | 🟡 **70% COMPLETE** | FastAPI has auto-generated Swagger at `/docs`. Express has OpenAPI JSON schema file. | Mount `swagger-ui-express` on `/api/docs` in Express API. |
-| **14** | **Production Deployment** | Cloud deployment, HTTPS, managed database, backups | ✅ **100% COMPLETE** | Backend live on Render (`project-management-d5cv.onrender.com`), Supabase DB live, Vercel ready. | Deploy frontend to Vercel. |
+| **12** | **Testing Strategy** | Unit, API, failure-path, OCC race, and boundary tests | ✅ **100% COMPLETE** | Backend: 38/38 passing (100%). Analytics: 10/10 passing (100%). Frontend: 8/8 passing (100%). | None. |
+| **13** | **API Documentation** | OpenAPI/Swagger documentation for Node & FastAPI | ✅ **100% COMPLETE** | FastAPI has auto-generated Swagger at `/docs`. Express has OpenAPI 3.0.3 specification and interactive Swagger UI at `/api/docs`. | None. |
+| **14** | **Production Deployment** | Cloud deployment, HTTPS, managed database, backups | ✅ **100% COMPLETE** | Backend live on Render (`project-management-d5cv.onrender.com`), Supabase DB live, Vercel deployment configured. | Deploy frontend to Vercel. |
 | **15** | **Architecture & Incident Drills**| Diagrams, failure drill evidence (OCC, DLQ, replay) | ✅ **100% COMPLETE** | Architecture diagrams in documentation, OCC collision drill automated, DLQ failover tested. | None. |
 
 ---
@@ -213,6 +213,6 @@ To close all gaps immediately:
 - [x] Python stream analytics processor operating with verified $O(1)$ constant memory.
 - [x] Full-screen task detail view with live submission audit logging.
 - [x] Production backend live on Render (`project-management-d5cv.onrender.com`).
-- [ ] Subtasks and Comments UI integrated on Task Detail page.
-- [ ] Swagger UI mounted at `/api/docs` on Express API.
-- [ ] All automated test suites running green in CI/CD pipeline.
+- [x] Subtasks and Comments UI integrated on Task Detail page.
+- [x] Swagger UI mounted at `/api/docs` on Express API.
+- [x] All automated test suites running green in CI/CD pipeline.

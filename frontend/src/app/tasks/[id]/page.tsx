@@ -7,7 +7,7 @@ import { Sidebar } from '../../../components/layout/Sidebar';
 import { Topbar } from '../../../components/layout/Topbar';
 import { ConflictResolutionModal } from '../../../components/tasks/ConflictResolutionModal';
 import { ApiClient } from '../../../lib/api';
-import { Task, Project, TaskStatus, TaskPriority, ActivityLog, OCCConflictError } from '../../../types';
+import { Task, Project, TaskStatus, TaskPriority, ActivityLog, OCCConflictError, Subtask, Comment } from '../../../types';
 
 const statusBadges: Record<TaskStatus, { label: string; class: string; dot: string }> = {
   TODO: { label: 'To Do', class: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
@@ -61,6 +61,16 @@ export default function TaskDetailPage() {
   const [workHours, setWorkHours] = useState<number>(2);
   const [isSubmittingWork, setIsSubmittingWork] = useState(false);
 
+  // Subtasks state
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+
+  // Comments state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newCommentContent, setNewCommentContent] = useState('');
+  const [isPostingComment, setIsPostingComment] = useState(false);
+
   useEffect(() => {
     if (taskId) {
       loadTaskAndActivity(taskId);
@@ -69,10 +79,12 @@ export default function TaskDetailPage() {
 
   const loadTaskAndActivity = async (id: string) => {
     setIsLoading(true);
-    const [fetchedTask, logs, projects] = await Promise.all([
+    const [fetchedTask, logs, projects, fetchedSubtasks, fetchedComments] = await Promise.all([
       ApiClient.getTaskById(id),
       ApiClient.getTaskActivity(id),
       ApiClient.getProjects(),
+      ApiClient.getSubtasks(id),
+      ApiClient.getComments(id),
     ]);
 
     if (fetchedTask) {
@@ -89,7 +101,56 @@ export default function TaskDetailPage() {
     }
 
     setActivityLogs(logs);
+    setSubtasks(fetchedSubtasks);
+    setComments(fetchedComments);
     setIsLoading(false);
+  };
+
+  const handleToggleSubtask = async (subtaskId: string) => {
+    setSubtasks((prev) =>
+      prev.map((s) => (s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s))
+    );
+    await ApiClient.toggleSubtask(taskId, subtaskId);
+  };
+
+  const handleAddSubtask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim()) return;
+    setIsAddingSubtask(true);
+    const res = await ApiClient.createSubtask(taskId, newSubtaskTitle.trim());
+    setIsAddingSubtask(false);
+    if (res.success && res.subtask) {
+      setSubtasks((prev) => [...prev, res.subtask!]);
+      setNewSubtaskTitle('');
+      showToast('Subtask created');
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
+    await ApiClient.deleteSubtask(taskId, subtaskId);
+    showToast('Subtask deleted');
+  };
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentContent.trim()) return;
+    setIsPostingComment(true);
+    const res = await ApiClient.createComment(taskId, newCommentContent.trim());
+    setIsPostingComment(false);
+    if (res.success && res.comment) {
+      setComments((prev) => [...prev, res.comment!]);
+      setNewCommentContent('');
+      showToast('Comment posted');
+      const updatedLogs = await ApiClient.getTaskActivity(taskId);
+      setActivityLogs(updatedLogs);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    await ApiClient.deleteComment(taskId, commentId);
+    showToast('Comment deleted');
   };
 
   const showToast = (message: string) => {
@@ -430,6 +491,98 @@ export default function TaskDetailPage() {
                     </div>
                   </div>
 
+                  {/* Subtasks Checklist Card */}
+                  <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
+                      <div>
+                        <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
+                          <span>☑️</span>
+                          <span>Subtasks & Acceptance Criteria</span>
+                        </h3>
+                        <p className="text-[11px] text-[#6E6E73] mt-0.5">
+                          Break down requirements into actionable team checkpoints
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-blue-50 text-[#007AFF] border border-blue-200/60 font-semibold">
+                        {subtasks.filter((s) => s.isCompleted).length} of {subtasks.length} completed
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {subtasks.length > 0 && (
+                      <div className="w-full bg-black/[0.04] h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[#007AFF] h-full transition-all duration-300 rounded-full"
+                          style={{
+                            width: `${Math.round(
+                              (subtasks.filter((s) => s.isCompleted).length / (subtasks.length || 1)) * 100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Subtasks List */}
+                    <div className="space-y-2">
+                      {subtasks.length === 0 ? (
+                        <p className="text-xs text-[#86868B] py-2 text-center">No subtasks added yet.</p>
+                      ) : (
+                        subtasks.map((sub) => (
+                          <div
+                            key={sub.id}
+                            className={`flex items-center justify-between p-2.5 rounded-[10px] border transition-all ${
+                              sub.isCompleted
+                                ? 'bg-black/[0.02] border-black/[0.04] text-[#86868B]'
+                                : 'bg-[#FBFBFD] border-black/[0.06] text-[#1D1D1F] hover:border-black/[0.12]'
+                            }`}
+                          >
+                            <label className="flex items-center space-x-3 cursor-pointer flex-1 select-none">
+                              <input
+                                type="checkbox"
+                                checked={sub.isCompleted}
+                                onChange={() => handleToggleSubtask(sub.id)}
+                                className="w-4 h-4 rounded text-[#007AFF] border-black/[0.2] focus:ring-[#007AFF]/25 cursor-pointer"
+                              />
+                              <span
+                                className={`text-xs font-medium leading-relaxed ${
+                                  sub.isCompleted ? 'line-through text-[#86868B]' : 'text-[#1D1D1F]'
+                                }`}
+                              >
+                                {sub.title}
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSubtask(sub.id)}
+                              className="text-xs text-[#86868B] hover:text-rose-600 p-1 transition-colors"
+                              title="Delete subtask"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Add Subtask Inline Form */}
+                    <form onSubmit={handleAddSubtask} className="flex items-center space-x-2 pt-2">
+                      <input
+                        type="text"
+                        value={newSubtaskTitle}
+                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                        placeholder="Add a new subtask..."
+                        className="flex-1 px-3 py-1.5 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isAddingSubtask || !newSubtaskTitle.trim()}
+                        className="px-3 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] disabled:opacity-50 text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
+                      >
+                        {isAddingSubtask ? 'Adding...' : '+ Add'}
+                      </button>
+                    </form>
+                  </div>
+
                   {/* Work Submission & Delivery Form Card */}
                   <form
                     onSubmit={handleSubmitWork}
@@ -510,6 +663,87 @@ export default function TaskDetailPage() {
 
                 {/* Right Column (Activity History & Submission Timeline) - 5 cols */}
                 <div className="lg:col-span-5 space-y-6">
+                  {/* Team Comments Discussion Thread Card */}
+                  <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
+                      <div>
+                        <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
+                          <span>💬</span>
+                          <span>Team Discussion & Comments</span>
+                        </h3>
+                        <p className="text-[11px] text-[#6E6E73] mt-0.5">
+                          Collaborate, leave code review notes, and discuss delivery
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 font-semibold">
+                        {comments.length} comments
+                      </span>
+                    </div>
+
+                    {/* Comments List */}
+                    <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                      {comments.length === 0 ? (
+                        <p className="text-xs text-[#86868B] py-3 text-center">No discussion yet. Start the conversation below.</p>
+                      ) : (
+                        comments.map((c) => {
+                          const initials = (c.authorName || 'TM')
+                            .split(' ')
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase();
+
+                          return (
+                            <div key={c.id} className="p-3 bg-[#FBFBFD] border border-black/[0.06] rounded-[12px] space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-6 h-6 rounded-full bg-[#007AFF] text-white flex items-center justify-center font-bold text-[10px]">
+                                    {initials}
+                                  </div>
+                                  <span className="font-semibold text-xs text-[#1D1D1F]">{c.authorName}</span>
+                                </div>
+                                <div className="flex items-center space-x-2 text-[10px] text-[#86868B]">
+                                  <span>{formatDate(c.createdAt)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteComment(c.id)}
+                                    className="hover:text-rose-600 transition-colors"
+                                    title="Delete comment"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-xs text-[#2C2C2E] leading-relaxed pl-8">
+                                {c.content}
+                              </p>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Add Comment Form */}
+                    <form onSubmit={handlePostComment} className="space-y-2 pt-2 border-t border-black/[0.04]">
+                      <textarea
+                        rows={2}
+                        value={newCommentContent}
+                        onChange={(e) => setNewCommentContent(e.target.value)}
+                        placeholder="Add a comment or code review note..."
+                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none leading-relaxed"
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={isPostingComment || !newCommentContent.trim()}
+                          className="px-3.5 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] disabled:opacity-50 text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
+                        >
+                          {isPostingComment ? 'Posting...' : 'Post Comment'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
                   {/* Submission & Activity Audit Log Timeline Card */}
                   <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
                     <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">

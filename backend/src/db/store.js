@@ -245,6 +245,62 @@ export class DatabaseStore {
       payload: { title: task103.title, status: 'TODO', version: 1, note: 'Task created from security compliance audit.' },
     });
 
+    // Seed Subtasks
+    const sub1 = {
+      id: 'sub-101',
+      taskId: 'task-103',
+      orgId: 'org-acme-101',
+      title: 'Generate SHA256 HMAC test fixtures with secret key',
+      isCompleted: true,
+      createdBy: 'usr-pm-1',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+    };
+    const sub2 = {
+      id: 'sub-102',
+      taskId: 'task-103',
+      orgId: 'org-acme-101',
+      title: 'Enforce 300-second timestamp tolerance in header verification',
+      isCompleted: true,
+      createdBy: 'usr-pm-1',
+      createdAt: new Date(Date.now() - 43200000).toISOString(),
+    };
+    const sub3 = {
+      id: 'sub-103',
+      taskId: 'task-103',
+      orgId: 'org-acme-101',
+      title: 'Implement Redis TTL idempotency cache for duplicate event rejection',
+      isCompleted: false,
+      createdBy: 'usr-member-1',
+      createdAt: new Date().toISOString(),
+    };
+    this.subtasks.set(sub1.id, sub1);
+    this.subtasks.set(sub2.id, sub2);
+    this.subtasks.set(sub3.id, sub3);
+
+    // Seed Comments
+    const com1 = {
+      id: 'com-101',
+      taskId: 'task-103',
+      orgId: 'org-acme-101',
+      content: 'Tested against Stripe and GitHub sample webhook payloads; signature verification passes cleanly.',
+      authorId: 'usr-pm-1',
+      authorName: 'Marcus Brody (PM)',
+      authorEmail: 'pm@acme.com',
+      createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    };
+    const com2 = {
+      id: 'com-102',
+      taskId: 'task-103',
+      orgId: 'org-acme-101',
+      content: 'Make sure we also log any rejected payloads into the security audit trail.',
+      authorId: 'usr-owner-1',
+      authorName: 'Elena Vance (Owner)',
+      authorEmail: 'owner@acme.com',
+      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    };
+    this.comments.set(com1.id, com1);
+    this.comments.set(com2.id, com2);
+
     // Append Initial Audit Log
     this.logActivity({
       orgId: 'org-acme-101',
@@ -665,6 +721,89 @@ export class DatabaseStore {
     };
     this.processedEvents.set(key, record);
     return { isDuplicate: false, record };
+  }
+  // --- Subtasks ---
+  getSubtasks(taskId, orgId) {
+    const task = this.tasks.get(taskId);
+    if (!task || task.orgId !== orgId) return [];
+    return Array.from(this.subtasks.values())
+      .filter((s) => s.taskId === taskId && s.orgId === orgId)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }
+
+  createSubtask(taskId, orgId, title, actorId) {
+    const task = this.tasks.get(taskId);
+    if (!task || task.orgId !== orgId) return null;
+    const subtask = {
+      id: `sub-${uuidv4().substring(0, 8)}`,
+      taskId,
+      orgId,
+      title: title.trim(),
+      isCompleted: false,
+      createdBy: actorId,
+      createdAt: new Date().toISOString(),
+    };
+    this.subtasks.set(subtask.id, subtask);
+    return subtask;
+  }
+
+  toggleSubtask(subtaskId, orgId) {
+    const subtask = this.subtasks.get(subtaskId);
+    if (!subtask || subtask.orgId !== orgId) return null;
+    subtask.isCompleted = !subtask.isCompleted;
+    subtask.updatedAt = new Date().toISOString();
+    return subtask;
+  }
+
+  deleteSubtask(subtaskId, orgId) {
+    const subtask = this.subtasks.get(subtaskId);
+    if (!subtask || subtask.orgId !== orgId) return false;
+    this.subtasks.delete(subtaskId);
+    return true;
+  }
+
+  // --- Comments ---
+  getComments(taskId, orgId) {
+    const task = this.tasks.get(taskId);
+    if (!task || task.orgId !== orgId) return [];
+    return Array.from(this.comments.values())
+      .filter((c) => c.taskId === taskId && c.orgId === orgId)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }
+
+  createComment(taskId, orgId, content, actorId) {
+    const task = this.tasks.get(taskId);
+    if (!task || task.orgId !== orgId) return null;
+    const author = this.users.get(actorId);
+    const comment = {
+      id: `com-${uuidv4().substring(0, 8)}`,
+      taskId,
+      orgId,
+      content: content.trim(),
+      authorId: actorId,
+      authorName: author?.fullName || (actorId.includes('@') ? actorId : 'Team Member'),
+      authorEmail: author?.email || (actorId.includes('@') ? actorId : 'pm@acme.com'),
+      createdAt: new Date().toISOString(),
+    };
+    this.comments.set(comment.id, comment);
+
+    this.logActivity({
+      orgId,
+      entityType: 'TASK',
+      entityId: taskId,
+      action: 'COMMENT_ADDED',
+      performedBy: comment.authorEmail || actorId,
+      payload: { commentId: comment.id, preview: content.substring(0, 80) },
+    });
+
+    return comment;
+  }
+
+  deleteComment(commentId, orgId) {
+    const comment = this.comments.get(commentId);
+    if (!comment || comment.orgId !== orgId) return false;
+    this.comments.delete(commentId);
+    return true;
   }
 }
 
