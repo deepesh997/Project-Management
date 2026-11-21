@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth, TokenValidationResult } from '../../lib/auth-context';
 import { UserRole } from '../../types';
 
@@ -11,6 +12,8 @@ export default function LoginPage() {
   // Sign In Form State
   const [email, setEmail] = useState('owner@acme.com');
   const [password, setPassword] = useState('Password123!');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Register Form State
   const [regFullName, setRegFullName] = useState('');
@@ -31,7 +34,7 @@ export default function LoginPage() {
     if (currentToken && !testToken) {
       setTestToken(currentToken);
     }
-  }, [currentToken]);
+  }, [currentToken, testToken]);
 
   const handleLogin = async (targetEmail?: string) => {
     const emailToUse = targetEmail || email;
@@ -45,6 +48,12 @@ export default function LoginPage() {
     if (!res.success) {
       setError(res.error || 'Authentication failed. Please verify credentials.');
     }
+  };
+
+  const handleQuickPersona = async (personaEmail: string) => {
+    setEmail(personaEmail);
+    setPassword('Password123!');
+    await handleLogin(personaEmail);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -72,72 +81,227 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1C1C1E] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-apple-sheet max-w-lg w-full p-8 border border-white/20 space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-11 h-11 bg-gradient-to-b from-[#007AFF] to-[#0062CC] rounded-[10px] mx-auto flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-blue-500/30 border border-white/20">
-            WS
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col lg:flex-row">
+      {/* ================= LEFT SIDE: IMAGE & VISUAL HERO (55%) ================= */}
+      <div className="lg:w-[52%] xl:w-[55%] bg-[#0B0F19] text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+        {/* Subtle Ambient Glowing Gradients */}
+        <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-[#007AFF]/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-[#5856D6]/20 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Top Header / Branding */}
+        <div className="relative z-10 space-y-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center font-bold text-base shadow-lg shadow-blue-500/25 border border-white/20">
+              WS
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-lg tracking-tight text-white">WorkSphere</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30 font-semibold">
+                  Enterprise v2.0
+                </span>
+              </div>
+              <p className="text-xs text-[#94A3B8]">Multi-Tenant Workflow Automation Platform</p>
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-[#1D1D1F] tracking-tight">
-            WorkSphere Identity & Authentication
-          </h2>
-          <p className="text-xs text-[#6E6E73]">
-            Cryptographic JWT Token Creation, Lifecycle & Verification
-          </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-[#F5F5F7] p-1 rounded-[10px] border border-black/[0.06] text-xs font-medium">
-          <button
-            onClick={() => { setActiveTab('signin'); setError(null); }}
-            className={`flex-1 py-1.5 rounded-[7px] transition-all ${
-              activeTab === 'signin'
-                ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => { setActiveTab('register'); setError(null); }}
-            className={`flex-1 py-1.5 rounded-[7px] transition-all ${
-              activeTab === 'register'
-                ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-            }`}
-          >
-            Create Account & Token
-          </button>
-          <button
-            onClick={() => { setActiveTab('validator'); setError(null); }}
-            className={`flex-1 py-1.5 rounded-[7px] transition-all ${
-              activeTab === 'validator'
-                ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
-                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-            }`}
-          >
-            Token Validator
-          </button>
+        {/* Center: Image Illustration & Visual Dashboard Showcase */}
+        <div className="relative z-10 my-8 space-y-6">
+          <div className="space-y-2 max-w-xl">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+              Mission-critical concurrency. <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] via-[#818CF8] to-[#C084FC]">
+                Guaranteed zero overwrites.
+              </span>
+            </h1>
+            <p className="text-sm text-[#94A3B8] leading-relaxed">
+              Designed according to Apple HIG standards. Backed by PostgreSQL 16 row-level tenant isolation, Python streaming analytics, and atomic Optimistic Concurrency Control.
+            </p>
+          </div>
+
+          {/* Interactive SVG Hero Showcase */}
+          <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-md group hover:border-[#007AFF]/40 transition-all duration-300">
+            <Image
+              src="/auth-hero.svg"
+              alt="WorkSphere Enterprise Platform Architecture"
+              width={800}
+              height={500}
+              priority
+              className="w-full h-auto object-cover transform group-hover:scale-[1.01] transition-transform duration-500"
+            />
+          </div>
+
+          {/* Live Feature Highlights Row */}
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <div className="p-3 rounded-[12px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-1">
+              <div className="flex items-center space-x-1.5 text-xs text-[#38BDF8] font-semibold">
+                <span>🛡️</span>
+                <span>OCC Engine</span>
+              </div>
+              <p className="text-[11px] text-[#94A3B8]">Atomic 409 conflict detection with version diffs</p>
+            </div>
+
+            <div className="p-3 rounded-[12px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-1">
+              <div className="flex items-center space-x-1.5 text-xs text-[#34D399] font-semibold">
+                <span>⚡</span>
+                <span>Real-Time SSE</span>
+              </div>
+              <p className="text-[11px] text-[#94A3B8]">Live broadcast stream with Redis idempotency</p>
+            </div>
+
+            <div className="p-3 rounded-[12px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-1">
+              <div className="flex items-center space-x-1.5 text-xs text-[#C084FC] font-semibold">
+                <span>📊</span>
+                <span>FastAPI 8000</span>
+              </div>
+              <p className="text-[11px] text-[#94A3B8]">Python $O(1)$ memory streaming analytics</p>
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <div className="p-3 bg-rose-50 text-rose-800 text-xs rounded-[8px] border border-rose-200 flex items-center justify-between animate-in fade-in">
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="font-bold text-xs ml-2">✕</button>
-          </div>
-        )}
+        {/* Bottom Security / Architecture Badges */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-[#64748B] pt-4 border-t border-white/10 flex-wrap gap-2">
+          <span>Tenant Context: <strong className="text-[#E2E8F0]">org-acme-101</strong></span>
+          <span>Database: <strong className="text-[#10B981]">Supabase PostgreSQL 16</strong></span>
+          <span>Security: <strong className="text-[#38BDF8]">HMAC-SHA256</strong></span>
+        </div>
+      </div>
 
-        {successMsg && (
-          <div className="p-3 bg-emerald-50 text-emerald-800 text-xs rounded-[8px] border border-emerald-200 flex items-center justify-between animate-in fade-in">
-            <span>{successMsg}</span>
-            <button onClick={() => setSuccessMsg(null)} className="font-bold text-xs ml-2">✕</button>
+      {/* ================= RIGHT SIDE: AUTHENTICATION FORM (45%) ================= */}
+      <div className="lg:w-[48%] xl:w-[45%] flex items-center justify-center p-6 sm:p-10 lg:p-14">
+        <div className="w-full max-w-md space-y-6">
+          {/* Header */}
+          <div className="space-y-1">
+            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#007AFF] border border-blue-200/80 text-[11px] font-semibold mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF]"></span>
+              <span>Acme Technologies Inc.</span>
+            </div>
+            <h2 className="text-2xl font-bold text-[#1D1D1F] tracking-tight">
+              Sign In to WorkSphere
+            </h2>
+            <p className="text-xs text-[#6E6E73]">
+              Choose a role below for instant one-click login or enter your corporate credentials.
+            </p>
           </div>
-        )}
 
-        {/* TAB 1: SIGN IN */}
-        {activeTab === 'signin' && (
-          <div className="space-y-5">
+          {/* Quick One-Click Demo Role Cards */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868B] block">
+              ⚡ One-Click Persona Login
+            </span>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => handleQuickPersona('owner@acme.com')}
+                disabled={isLoading}
+                className="p-2.5 bg-white hover:bg-purple-50/60 border border-purple-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-purple-700">Elena Vance</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">Owner</span>
+                </div>
+                <div className="text-[10px] text-[#86868B] truncate mt-0.5">owner@acme.com</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickPersona('pm@acme.com')}
+                disabled={isLoading}
+                className="p-2.5 bg-white hover:bg-blue-50/60 border border-blue-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-blue-700">Marcus Brody</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">PM</span>
+                </div>
+                <div className="text-[10px] text-[#86868B] truncate mt-0.5">pm@acme.com</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickPersona('member@acme.com')}
+                disabled={isLoading}
+                className="p-2.5 bg-white hover:bg-emerald-50/60 border border-emerald-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-emerald-700">Sarah Connor</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Dev</span>
+                </div>
+                <div className="text-[10px] text-[#86868B] truncate mt-0.5">member@acme.com</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickPersona('auditor@acme.com')}
+                disabled={isLoading}
+                className="p-2.5 bg-white hover:bg-amber-50/60 border border-amber-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-amber-700">Arthur Pendelton</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Auditor</span>
+                </div>
+                <div className="text-[10px] text-[#86868B] truncate mt-0.5">auditor@acme.com</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Switcher */}
+          <div className="flex bg-[#EBEBED] p-1 rounded-[10px] text-xs font-medium">
+            <button
+              onClick={() => { setActiveTab('signin'); setError(null); }}
+              className={`flex-1 py-1.5 rounded-[7px] transition-all ${
+                activeTab === 'signin'
+                  ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                  : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => { setActiveTab('register'); setError(null); }}
+              className={`flex-1 py-1.5 rounded-[7px] transition-all ${
+                activeTab === 'register'
+                  ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                  : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+              }`}
+            >
+              Register
+            </button>
+            <button
+              onClick={() => { setActiveTab('validator'); setError(null); }}
+              className={`flex-1 py-1.5 rounded-[7px] transition-all ${
+                activeTab === 'validator'
+                  ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                  : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+              }`}
+            >
+              JWT Tool
+            </button>
+          </div>
+
+          {/* Feedback Banners */}
+          {error && (
+            <div className="p-3 bg-rose-50 text-rose-900 text-xs rounded-[10px] border border-rose-200 flex items-center justify-between animate-in fade-in">
+              <div className="flex items-center space-x-2">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+              <button onClick={() => setError(null)} className="font-bold text-xs ml-2 text-rose-700">✕</button>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="p-3 bg-emerald-50 text-emerald-900 text-xs rounded-[10px] border border-emerald-200 flex items-center justify-between animate-in fade-in">
+              <div className="flex items-center space-x-2">
+                <span>✓</span>
+                <span>{successMsg}</span>
+              </div>
+              <button onClick={() => setSuccessMsg(null)} className="font-bold text-xs ml-2 text-emerald-700">✕</button>
+            </div>
+          )}
+
+          {/* TAB 1: SIGN IN */}
+          {activeTab === 'signin' && (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -146,238 +310,197 @@ export default function LoginPage() {
               className="space-y-4 text-xs"
             >
               <div>
-                <label className="font-semibold text-[#1D1D1F] block mb-1">
+                <label className="font-semibold text-[#1D1D1F] block mb-1.5">
                   Corporate Email
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                  required
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8E8E93]">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="w-full pl-9 pr-3 py-2.5 bg-white border border-black/[0.12] rounded-[10px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none transition-all"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="font-semibold text-[#1D1D1F] block mb-1">
-                  Password
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="font-semibold text-[#1D1D1F]">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-[11px] text-[#007AFF] hover:underline"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8E8E93]">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="w-full pl-9 pr-10 py-2.5 bg-white border border-black/[0.12] rounded-[10px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none transition-all font-mono"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center space-x-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-[#007AFF] border-black/[0.2] focus:ring-[#007AFF]/25 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-[#6E6E73]">Remember session</span>
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                  required
-                />
+                <span className="text-[11px] text-[#86868B] font-mono">Scope: org-acme-101</span>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white font-semibold rounded-[8px] text-xs shadow-sm transition-all disabled:opacity-50"
+                className="w-full py-2.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white font-semibold rounded-[10px] text-xs shadow-sm shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
               >
-                {isLoading ? 'Authenticating with Backend...' : 'Sign In & Issue JWT Access Token'}
+                <span>{isLoading ? 'Authenticating & Issuing Token...' : 'Sign In to Workspace →'}</span>
               </button>
             </form>
+          )}
 
-            {/* One-Click Personas */}
-            <div className="border-t border-black/[0.06] pt-4 space-y-2">
-              <span className="text-[11px] font-semibold text-[#86868B] uppercase tracking-wider block text-center">
-                One-Click Authenticated Personas
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  onClick={() => handleLogin('owner@acme.com')}
-                  disabled={isLoading}
-                  className="p-2 border border-purple-200 bg-purple-50/50 hover:bg-purple-100/50 rounded-[8px] text-left text-purple-900 transition-colors"
-                >
-                  <div className="font-semibold">Elena Vance</div>
-                  <div className="text-[10px] text-purple-700">Organization Owner</div>
-                </button>
-                <button
-                  onClick={() => handleLogin('pm@acme.com')}
-                  disabled={isLoading}
-                  className="p-2 border border-blue-200 bg-blue-50/50 hover:bg-blue-100/50 rounded-[8px] text-left text-blue-900 transition-colors"
-                >
-                  <div className="font-semibold">Marcus Brody</div>
-                  <div className="text-[10px] text-blue-700">Project Manager</div>
-                </button>
-                <button
-                  onClick={() => handleLogin('member@acme.com')}
-                  disabled={isLoading}
-                  className="p-2 border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 rounded-[8px] text-left text-emerald-900 transition-colors"
-                >
-                  <div className="font-semibold">Sarah Connor</div>
-                  <div className="text-[10px] text-emerald-700">Team Member (Dev)</div>
-                </button>
-                <button
-                  onClick={() => handleLogin('auditor@acme.com')}
-                  disabled={isLoading}
-                  className="p-2 border border-amber-200 bg-amber-50/50 hover:bg-amber-100/50 rounded-[8px] text-left text-amber-900 transition-colors"
-                >
-                  <div className="font-semibold">Arthur Pendelton</div>
-                  <div className="text-[10px] text-amber-700">Compliance Auditor</div>
-                </button>
+          {/* TAB 2: REGISTER */}
+          {activeTab === 'register' && (
+            <form onSubmit={handleRegister} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Alex Morgan"
+                  value={regFullName}
+                  onChange={(e) => setRegFullName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                  required
+                />
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* TAB 2: CREATE ACCOUNT & GENERATE TOKEN */}
-        {activeTab === 'register' && (
-          <form onSubmit={handleRegister} className="space-y-4 text-xs">
-            <div>
-              <label className="font-semibold text-[#1D1D1F] block mb-1">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. John Doe"
-                value={regFullName}
-                onChange={(e) => setRegFullName(e.target.value)}
-                className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                required
-              />
-            </div>
+              <div>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Corporate Email *</label>
+                <input
+                  type="email"
+                  placeholder="alex.morgan@acme.com"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="font-semibold text-[#1D1D1F] block mb-1">
-                Corporate Email Address *
-              </label>
-              <input
-                type="email"
-                placeholder="john.doe@acme.com"
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                required
-              />
-            </div>
+              <div>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Password *</label>
+                <input
+                  type="password"
+                  placeholder="Min 8 chars, 1 uppercase, 1 digit"
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none font-mono"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="font-semibold text-[#1D1D1F] block mb-1">
-                Password (min 6 characters) *
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-                required
-              />
-            </div>
+              <div>
+                <label className="font-semibold text-[#1D1D1F] block mb-1">Organization Role *</label>
+                <select
+                  value={regRole}
+                  onChange={(e) => setRegRole(e.target.value as UserRole)}
+                  className="w-full px-3 py-2 bg-white border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none font-medium"
+                >
+                  <option value="team_member">Team Member (Developer / Contributor)</option>
+                  <option value="project_manager">Project Manager (Task &amp; Roadmap Owner)</option>
+                  <option value="org_owner">Organization Owner (Full Administrative Rights)</option>
+                  <option value="auditor">Compliance Auditor (Read-Only Activity Trail)</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="font-semibold text-[#1D1D1F] block mb-1">
-                Assigned Role
-              </label>
-              <select
-                value={regRole}
-                onChange={(e) => setRegRole(e.target.value as UserRole)}
-                className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white font-semibold rounded-[10px] text-xs shadow-sm transition-all disabled:opacity-50"
               >
-                <option value="org_owner">Organization Owner</option>
-                <option value="project_manager">Project Manager</option>
-                <option value="team_member">Team Member (Developer)</option>
-                <option value="auditor">Compliance Auditor</option>
-              </select>
-            </div>
+                {isLoading ? 'Creating Account & Signing In...' : 'Register & Join Acme Workspace'}
+              </button>
+            </form>
+          )}
 
-            <div className="bg-[#F5F5F7] p-3 rounded-[8px] text-[11px] text-[#6E6E73] border border-black/[0.06]">
-              Submitting registers the user into Supabase PostgreSQL and cryptographically signs a pair of JWT access and refresh tokens.
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white font-semibold rounded-[8px] text-xs shadow-sm transition-all disabled:opacity-50"
-            >
-              {isLoading ? 'Provisioning User & Token...' : 'Create Account & Generate JWT Token'}
-            </button>
-          </form>
-        )}
-
-        {/* TAB 3: TOKEN VALIDATOR & DIAGNOSTICS */}
-        {activeTab === 'validator' && (
-          <div className="space-y-4 text-xs">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-semibold text-[#1D1D1F]">
-                  JWT Token to Validate
+          {/* TAB 3: TOKEN DIAGNOSTICS */}
+          {activeTab === 'validator' && (
+            <div className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-semibold text-[#1D1D1F] block">
+                  RFC 7519 JWT Token Validator
                 </label>
-                {currentToken && (
-                  <button
-                    type="button"
-                    onClick={() => setTestToken(currentToken)}
-                    className="text-[11px] text-[#007AFF] hover:underline"
-                  >
-                    Paste Active Session Token
-                  </button>
-                )}
+                <textarea
+                  rows={4}
+                  value={testToken}
+                  onChange={(e) => setTestToken(e.target.value)}
+                  placeholder="Paste Bearer JWT token here..."
+                  className="w-full px-3 py-2 bg-white border border-black/[0.12] rounded-[8px] text-[11px] font-mono focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none leading-relaxed"
+                />
               </div>
-              <textarea
-                rows={3}
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                value={testToken}
-                onChange={(e) => setTestToken(e.target.value)}
-                className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-[11px] font-mono focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
-              ></textarea>
-            </div>
 
-            <button
-              type="button"
-              disabled={isValidating || !testToken}
-              onClick={handleRunValidation}
-              className="w-full py-2 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white font-semibold rounded-[8px] text-xs shadow-sm transition-all disabled:opacity-50 flex items-center justify-center space-x-1.5"
-            >
-              <span>{isValidating ? 'Validating against backend...' : 'Verify Token via /api/v1/auth/validate'}</span>
-            </button>
-
-            {validationResult && (
-              <div
-                className={`p-4 rounded-[12px] border space-y-2.5 animate-in fade-in ${
-                  validationResult.valid
-                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
-                    : 'bg-rose-50/60 border-rose-200 text-rose-950'
-                }`}
+              <button
+                type="button"
+                onClick={handleRunValidation}
+                disabled={isValidating || !testToken}
+                className="w-full py-2 bg-[#5856D6] hover:bg-[#4745B8] active:scale-[0.98] text-white font-semibold rounded-[8px] text-xs shadow-sm transition-all disabled:opacity-50"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        validationResult.valid ? 'bg-emerald-500' : 'bg-rose-500'
-                      }`}
-                    ></span>
-                    <span className="font-bold text-xs uppercase tracking-wider">
-                      {validationResult.valid ? 'Valid & Cryptographically Verified' : 'Invalid Token'}
+                {isValidating ? 'Validating Token...' : 'Verify Signature & Decode Claims'}
+              </button>
+
+              {validationResult && (
+                <div
+                  className={`p-3.5 rounded-[10px] border text-xs space-y-2 animate-in fade-in ${
+                    validationResult.valid
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                      : 'bg-rose-50 border-rose-200 text-rose-950'
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold">
+                    <span>{validationResult.valid ? '✓ Token Verified' : '✕ Token Invalid'}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/[0.06]">
+                      {validationResult.valid ? 'Signature Valid' : 'Check Failed'}
                     </span>
                   </div>
-                  {validationResult.expiresInSeconds !== undefined && (
-                    <span className="text-[10px] font-mono bg-white/80 px-2 py-0.5 rounded border">
-                      {validationResult.expiresInSeconds}s remaining
-                    </span>
+
+                  {validationResult.user && (
+                    <div className="space-y-1 pt-1 font-mono text-[10px] bg-white/70 p-2.5 rounded-[6px] border border-black/[0.04]">
+                      <div>Subject: <strong>{validationResult.user.id}</strong></div>
+                      <div>Role: <strong className="text-purple-700">{validationResult.user.role}</strong></div>
+                      <div>Tenant: <strong className="text-blue-700">{validationResult.user.orgId}</strong></div>
+                      <div>Email: <strong>{validationResult.user.email}</strong></div>
+                    </div>
                   )}
                 </div>
-
-                {validationResult.valid && validationResult.user ? (
-                  <div className="space-y-1.5 text-[11px] bg-white/70 p-3 rounded-[8px] border border-emerald-100 font-mono">
-                    <div>User ID: <strong>{validationResult.user.id}</strong></div>
-                    <div>Email: <strong>{validationResult.user.email}</strong></div>
-                    <div>Name: <strong>{validationResult.user.fullName}</strong></div>
-                    <div>Role: <strong>{validationResult.user.role}</strong></div>
-                    <div>Tenant: <strong>{validationResult.user.orgId}</strong></div>
-                    <div>Expires: {validationResult.expiresAt}</div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-rose-800">
-                    <strong>Error:</strong> {validationResult.error?.message} ({validationResult.error?.code})
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
@@ -15,6 +15,14 @@ const priorityBadges: Record<string, { label: string; class: string }> = {
   URGENT: { label: 'P0 Critical', class: 'bg-red-100 text-red-800 border-red-300 font-bold' },
 };
 
+const statusBadges: Record<TaskStatus, { label: string; class: string; dot: string }> = {
+  TODO: { label: 'To Do', class: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-400' },
+  IN_PROGRESS: { label: 'In Progress', class: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-[#007AFF]' },
+  IN_REVIEW: { label: 'In Review', class: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+  DONE: { label: 'Completed', class: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-[#34C759]' },
+  BLOCKED: { label: 'Blocked', class: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' },
+};
+
 const KANBAN_COLUMNS: { id: TaskStatus; label: string; dotColor: string }[] = [
   { id: 'TODO', label: 'To Do', dotColor: 'bg-slate-400' },
   { id: 'IN_PROGRESS', label: 'In Progress', dotColor: 'bg-[#007AFF]' },
@@ -27,6 +35,14 @@ export default function TasksPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [conflict, setConflict] = useState<OCCConflictError | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // View mode: Kanban vs List (PRD Feature)
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+
+  // Search & Filters (PRD Feature)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProject, setSelectedProject] = useState('ALL');
+  const [selectedPriority, setSelectedPriority] = useState('ALL');
 
   // Drag and drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
@@ -53,7 +69,7 @@ export default function TasksPage() {
     ]);
     setTasks(taskList);
     setProjects(projectList);
-    if (projectList.length > 0) {
+    if (projectList.length > 0 && !newProjectId) {
       setNewProjectId(projectList[0].id);
     }
   };
@@ -63,6 +79,67 @@ export default function TasksPage() {
     setTimeout(() => {
       setNotification((prev) => (prev === message ? null : prev));
     }, 4500);
+  };
+
+  // Filtered Tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesProject = selectedProject === 'ALL' || t.projectId === selectedProject;
+      const matchesPriority = selectedPriority === 'ALL' || t.priority === selectedPriority;
+
+      return matchesSearch && matchesProject && matchesPriority;
+    });
+  }, [tasks, searchQuery, selectedProject, selectedPriority]);
+
+  // Metrics summary calculated from active dataset
+  const metrics = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((t) => t.status === 'DONE').length;
+    const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+    const blocked = tasks.filter((t) => t.status === 'BLOCKED').length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+    const totalActual = tasks.reduce((sum, t) => sum + (t.actualHours || 0), 0);
+
+    return { total, completed, inProgress, blocked, completionRate, totalEstimated, totalActual };
+  }, [tasks]);
+
+  // --- Move Status Directly (Quick Action) ---
+  const handleMoveStatus = async (taskId: string, targetStatus: TaskStatus) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === targetStatus) return;
+
+    const previousStatus = task.status;
+    const previousVersion = task.version;
+
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t))
+    );
+
+    const res = await ApiClient.updateTaskWithOCC(
+      taskId,
+      { status: targetStatus },
+      previousVersion
+    );
+
+    if (res.conflict) {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
+      );
+      setConflict(res.conflict);
+    } else if (res.task) {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? res.task! : t))
+      );
+      showToast(`Task moved to ${targetStatus.replace('_', ' ')} (v${res.task.version})`);
+    }
   };
 
   // --- Drag and Drop Handlers ---
@@ -96,48 +173,48 @@ export default function TasksPage() {
     setDragOverCol(null);
     const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
     if (!taskId) return;
-
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === targetStatus) return;
-
-    // Optimistic UI update
-    const previousStatus = task.status;
-    const previousVersion = task.version;
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t))
-    );
-
-    // Call backend API with OCC Version validation
-    const res = await ApiClient.updateTaskWithOCC(
-      taskId,
-      { status: targetStatus },
-      previousVersion
-    );
-
-    if (res.conflict) {
-      // Revert optimistic UI on conflict
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t))
-      );
-      setConflict(res.conflict);
-    } else if (res.task) {
-      // Confirmed server update with incremented version
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? res.task! : t))
-      );
-      showToast(`Task moved to ${targetStatus.replace('_', ' ')} • Saved as v${res.task.version}`);
-    }
+    await handleMoveStatus(taskId, targetStatus);
   };
 
-  // --- Navigate to Full-Screen Task Detail View ---
   const handleEditClick = (task: Task) => {
     router.push(`/tasks/${task.id}`);
   };
 
-  const handleReloadLatest = () => {
-    setConflict(null);
-    loadInitialData();
-    showToast('Reloaded authoritative server version. Silent overwrite avoided.');
+  // --- Export Data Utility (PRD Section 4 & Assessment 5) ---
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Title', 'Project', 'Status', 'Priority', 'EstimatedHours', 'ActualHours', 'OCCVersion', 'CreatedAt'];
+    const rows = tasks.map((t) => [
+      t.id,
+      `"${t.title.replace(/"/g, '""')}"`,
+      t.projectId,
+      t.status,
+      t.priority,
+      t.estimatedHours || 0,
+      t.actualHours || 0,
+      t.version,
+      t.createdAt,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `worksphere_tasks_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Tasks successfully exported to CSV');
+  };
+
+  const handleExportJSON = () => {
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(tasks, null, 2))}`;
+    const link = document.createElement('a');
+    link.setAttribute('href', jsonString);
+    link.setAttribute('download', `worksphere_tasks_${Date.now()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Tasks successfully exported to JSON');
   };
 
   // --- Create Task Handlers ---
@@ -174,29 +251,76 @@ export default function TasksPage() {
       <div className="flex-1 flex flex-col overflow-y-auto">
         <Topbar />
 
-        <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
-          {/* Header Row */}
+        <main className="p-6 sm:p-8 max-w-7xl w-full mx-auto space-y-6">
+          {/* Top Bar: Title & Primary Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <h2 className="text-xl font-bold text-[#1D1D1F] tracking-tight flex items-center space-x-2">
-                <span>Tasks & Interactive Kanban Board</span>
-                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
-                  Drag & Drop Active
-                </span>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-[#1D1D1F] tracking-tight">
+                Tasks & Workflow Management
               </h2>
-              <p className="text-xs text-[#6E6E73]">
-                Drag cards across columns • Protected by Optimistic Concurrency Control (OCC) • Versioned in PostgreSQL
+              <p className="text-xs text-[#6E6E73] mt-0.5">
+                Organize deliverables, track OCC concurrency versions, and collaborate in real-time.
               </p>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-[6px] text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                SSE Connected
-              </span>
+            <div className="flex items-center space-x-2.5 flex-wrap gap-y-2">
+              {/* View Mode Toggle Segment */}
+              <div className="flex bg-[#EBEBED] p-0.5 rounded-[8px] text-xs font-medium">
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`px-3 py-1 rounded-[6px] transition-all flex items-center space-x-1.5 ${
+                    viewMode === 'kanban'
+                      ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                      : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                  }`}
+                >
+                  <span>📋</span>
+                  <span>Kanban</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 rounded-[6px] transition-all flex items-center space-x-1.5 ${
+                    viewMode === 'list'
+                      ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                      : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                  }`}
+                >
+                  <span>☰</span>
+                  <span>List View</span>
+                </button>
+              </div>
+
+              {/* Data Export Button */}
+              <div className="relative inline-block text-left group">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 bg-white hover:bg-black/[0.04] border border-black/[0.1] rounded-[8px] text-xs font-medium text-[#1D1D1F] transition-all shadow-xs flex items-center space-x-1.5"
+                >
+                  <span>📥</span>
+                  <span>Export</span>
+                </button>
+                <div className="absolute right-0 mt-1 w-36 bg-white border border-black/[0.08] rounded-[10px] shadow-apple-sheet py-1 hidden group-hover:block z-20">
+                  <button
+                    onClick={handleExportCSV}
+                    className="w-full text-left px-3 py-1.5 text-xs text-[#1D1D1F] hover:bg-black/[0.04] flex items-center space-x-2"
+                  >
+                    <span>📄</span>
+                    <span>Export CSV</span>
+                  </button>
+                  <button
+                    onClick={handleExportJSON}
+                    className="w-full text-left px-3 py-1.5 text-xs text-[#1D1D1F] hover:bg-black/[0.04] flex items-center space-x-2"
+                  >
+                    <span>📦</span>
+                    <span>Export JSON</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* New Task Button */}
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-3.5 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all flex items-center space-x-1.5"
+                className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm shadow-blue-500/20 transition-all flex items-center space-x-1.5"
               >
                 <span>+</span>
                 <span>New Task</span>
@@ -206,7 +330,7 @@ export default function TasksPage() {
 
           {/* Toast Notification */}
           {notification && (
-            <div className="p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-[10px] text-xs text-emerald-900 flex justify-between items-center shadow-xs animate-in fade-in">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-[10px] text-xs text-emerald-900 flex justify-between items-center shadow-xs animate-in fade-in">
               <div className="flex items-center space-x-2">
                 <span>✓</span>
                 <span className="font-medium">{notification}</span>
@@ -220,101 +344,314 @@ export default function TasksPage() {
             </div>
           )}
 
-          {/* Interactive Drag & Drop Kanban Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {KANBAN_COLUMNS.map((col) => {
-              const colTasks = tasks.filter((t) => t.status === col.id);
-              const isOver = dragOverCol === col.id;
+          {/* Quick Metrics KPI Strip (PRD Feature) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-apple-sm space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868B]">Total Tasks</span>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-xl sm:text-2xl font-bold text-[#1D1D1F]">{metrics.total}</span>
+                <span className="text-xs text-[#86868B]">records</span>
+              </div>
+            </div>
 
-              return (
-                <div
-                  key={col.id}
-                  onDragOver={(e) => handleDragOver(e, col.id)}
-                  onDragLeave={(e) => handleDragLeave(e, col.id)}
-                  onDrop={(e) => handleDrop(e, col.id)}
-                  className={`rounded-[16px] p-4 flex flex-col space-y-3 min-h-[540px] transition-all duration-200 ${
-                    isOver
-                      ? 'bg-blue-50/70 border-2 border-dashed border-[#007AFF] shadow-apple-md ring-2 ring-blue-500/20'
-                      : 'bg-[#EBEBED]/70 border border-black/[0.04]'
-                  }`}
+            <div className="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-apple-sm space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868B]">In Progress</span>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-xl sm:text-2xl font-bold text-[#007AFF]">{metrics.inProgress}</span>
+                <span className="text-xs text-[#86868B]">active sprint</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-apple-sm space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868B]">Completion Rate</span>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-xl sm:text-2xl font-bold text-[#34C759]">{metrics.completionRate}%</span>
+                <span className="text-xs text-[#86868B]">{metrics.completed} of {metrics.total}</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-apple-sm space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868B]">Hours Logged</span>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-xl sm:text-2xl font-bold text-purple-700">{metrics.totalActual}h</span>
+                <span className="text-xs text-[#86868B]">of {metrics.totalEstimated}h est</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Search & Multi-Filter Bar */}
+          <div className="bg-white p-3.5 rounded-2xl border border-black/[0.06] shadow-apple-sm flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="relative w-full md:max-w-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8E8E93]">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks by title, ID, or keywords..."
+                className="w-full pl-9 pr-3 py-1.5 bg-[#F5F5F7] border border-black/[0.06] rounded-[8px] text-xs text-[#1D1D1F] placeholder-[#8E8E93] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/25"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2.5 w-full md:w-auto justify-end flex-wrap gap-y-2">
+              <div className="flex items-center space-x-1.5 text-xs text-[#6E6E73]">
+                <span>Project:</span>
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="px-2.5 py-1.5 bg-[#F5F5F7] border border-black/[0.06] rounded-[8px] text-xs font-medium text-[#1D1D1F] outline-none"
                 >
-                  {/* Column Header */}
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center space-x-2">
-                      <span className={`w-2 h-2 rounded-full ${col.dotColor}`}></span>
-                      <span className="font-semibold text-xs text-[#1D1D1F] uppercase tracking-wider">
-                        {col.label}
+                  <option value="ALL">All Projects</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-1.5 text-xs text-[#6E6E73]">
+                <span>Priority:</span>
+                <select
+                  value={selectedPriority}
+                  onChange={(e) => setSelectedPriority(e.target.value)}
+                  className="px-2.5 py-1.5 bg-[#F5F5F7] border border-black/[0.06] rounded-[8px] text-xs font-medium text-[#1D1D1F] outline-none"
+                >
+                  <option value="ALL">All Priorities</option>
+                  <option value="URGENT">P0 Critical</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+
+              {(searchQuery || selectedProject !== 'ALL' || selectedPriority !== 'ALL') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedProject('ALL');
+                    setSelectedPriority('ALL');
+                  }}
+                  className="text-xs text-[#007AFF] hover:underline px-1"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ================= VIEW 1: KANBAN BOARD ================= */}
+          {viewMode === 'kanban' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {KANBAN_COLUMNS.map((col) => {
+                const colTasks = filteredTasks.filter((t) => t.status === col.id);
+                const isOver = dragOverCol === col.id;
+
+                return (
+                  <div
+                    key={col.id}
+                    onDragOver={(e) => handleDragOver(e, col.id)}
+                    onDragLeave={(e) => handleDragLeave(e, col.id)}
+                    onDrop={(e) => handleDrop(e, col.id)}
+                    className={`rounded-2xl p-4 flex flex-col space-y-3 min-h-[520px] transition-all duration-200 ${
+                      isOver
+                        ? 'bg-blue-50/70 border-2 border-dashed border-[#007AFF] shadow-apple-md'
+                        : 'bg-[#EBEBED]/70 border border-black/[0.04]'
+                    }`}
+                  >
+                    {/* Column Header */}
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-2 h-2 rounded-full ${col.dotColor}`}></span>
+                        <span className="font-semibold text-xs text-[#1D1D1F] uppercase tracking-wider">
+                          {col.label}
+                        </span>
+                      </div>
+                      <span className="bg-black/[0.06] text-[#6E6E73] px-2 py-0.5 rounded-full text-[11px] font-semibold">
+                        {colTasks.length}
                       </span>
                     </div>
-                    <span className="bg-black/[0.06] text-[#6E6E73] px-2 py-0.5 rounded-full text-[11px] font-semibold">
-                      {colTasks.length}
-                    </span>
-                  </div>
 
-                  {/* Task Cards List */}
-                  <div className="space-y-2.5 flex-1 overflow-y-auto">
-                    {colTasks.map((task) => {
-                      const priority = priorityBadges[task.priority] || priorityBadges.MEDIUM;
-                      const isBeingDragged = draggedTaskId === task.id;
+                    {/* Task Cards List */}
+                    <div className="space-y-2.5 flex-1 overflow-y-auto">
+                      {colTasks.map((task) => {
+                        const priority = priorityBadges[task.priority] || priorityBadges.MEDIUM;
+                        const isBeingDragged = draggedTaskId === task.id;
 
-                      return (
-                        <div
-                          key={task.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, task.id)}
-                          onDragEnd={handleDragEnd}
-                          onClick={() => handleEditClick(task)}
-                          className={`bg-white p-4 rounded-[12px] border border-black/[0.06] shadow-apple-sm hover:shadow-apple-md hover:border-[#007AFF]/40 cursor-grab active:cursor-grabbing transition-all duration-150 space-y-2.5 ${
-                            isBeingDragged ? 'opacity-40 scale-95 border-blue-400' : 'active:scale-[0.99]'
-                          }`}
-                        >
-                          {/* Card Header */}
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-mono text-[10px] text-[#86868B] font-medium">
-                              {task.id}
-                            </span>
-                            <span className="px-1.5 py-0.2 rounded-[4px] bg-[#007AFF]/10 text-[#007AFF] font-mono font-semibold text-[10px] border border-[#007AFF]/20">
-                              v{task.version}
-                            </span>
+                        return (
+                          <div
+                            key={task.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task.id)}
+                            onDragEnd={handleDragEnd}
+                            onClick={() => handleEditClick(task)}
+                            className={`bg-white p-4 rounded-xl border border-black/[0.06] shadow-apple-sm hover:shadow-apple-md hover:border-[#007AFF]/40 cursor-grab active:cursor-grabbing transition-all duration-150 space-y-2.5 group ${
+                              isBeingDragged ? 'opacity-40 scale-95 border-blue-400' : 'active:scale-[0.99]'
+                            }`}
+                          >
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-mono text-[10px] text-[#86868B] font-medium">
+                                {task.id}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded-[4px] bg-[#007AFF]/10 text-[#007AFF] font-mono font-semibold text-[10px] border border-[#007AFF]/20">
+                                v{task.version}
+                              </span>
+                            </div>
+
+                            {/* Title & Desc */}
+                            <div>
+                              <h4 className="font-semibold text-xs text-[#1D1D1F] line-clamp-2 leading-snug group-hover:text-[#007AFF] transition-colors">
+                                {task.title}
+                              </h4>
+                              {task.description && (
+                                <p className="text-[11px] text-[#6E6E73] mt-1 line-clamp-2 leading-relaxed">
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Card Footer: Priority, Hours & Quick Move Action */}
+                            <div className="pt-1 flex items-center justify-between text-[11px] border-t border-black/[0.04]">
+                              <span className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-medium ${priority.class}`}>
+                                {priority.label}
+                              </span>
+                              
+                              <div className="flex items-center space-x-2">
+                                <span className="text-[#86868B] text-[10px] font-medium">
+                                  {task.actualHours || 0}/{task.estimatedHours}h
+                                </span>
+
+                                {/* Quick Move Buttons (PRD Workflow Action) */}
+                                {col.id === 'TODO' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveStatus(task.id, 'IN_PROGRESS');
+                                    }}
+                                    className="text-[10px] text-[#007AFF] hover:underline font-semibold"
+                                    title="Start task"
+                                  >
+                                    Start →
+                                  </button>
+                                )}
+                                {col.id === 'IN_PROGRESS' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveStatus(task.id, 'DONE');
+                                    }}
+                                    className="text-[10px] text-[#34C759] hover:underline font-semibold"
+                                    title="Mark complete"
+                                  >
+                                    Done ✓
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                        );
+                      })}
 
-                          {/* Title & Desc */}
-                          <div>
-                            <h4 className="font-semibold text-xs text-[#1D1D1F] line-clamp-2 leading-snug">
-                              {task.title}
-                            </h4>
-                            {task.description && (
-                              <p className="text-[11px] text-[#6E6E73] mt-1 line-clamp-2 leading-relaxed">
-                                {task.description}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Card Footer */}
-                          <div className="pt-1 flex items-center justify-between text-[11px] border-t border-black/[0.04]">
-                            <span className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-medium ${priority.class}`}>
-                              {priority.label}
-                            </span>
-                            <span className="text-[#86868B] flex items-center space-x-1">
-                              <span>⏱</span>
-                              <span>{task.estimatedHours}h est</span>
-                            </span>
-                          </div>
+                      {colTasks.length === 0 && (
+                        <div className="h-32 rounded-xl border border-dashed border-black/10 flex flex-col items-center justify-center text-xs text-[#86868B] space-y-1">
+                          <span>No tasks in this column</span>
+                          <span className="text-[10px] text-[#AEAEB2]">Drag tasks here or create a new one</span>
                         </div>
-                      );
-                    })}
-
-                    {colTasks.length === 0 && (
-                      <div className="h-32 rounded-[12px] border border-dashed border-black/10 flex flex-col items-center justify-center text-xs text-[#86868B] space-y-1">
-                        <span>Drop tasks here</span>
-                        <span className="text-[10px] text-[#AEAEB2]">OCC Version checks will apply</span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ================= VIEW 2: COMPACT LIST TABLE VIEW ================= */}
+          {viewMode === 'list' && (
+            <div className="bg-white rounded-2xl border border-black/[0.08] shadow-apple-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FBFBFD] border-b border-black/[0.06] text-[#86868B] uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">ID</th>
+                      <th className="py-3 px-4 font-semibold">Task Title</th>
+                      <th className="py-3 px-4 font-semibold">Status</th>
+                      <th className="py-3 px-4 font-semibold">Priority</th>
+                      <th className="py-3 px-4 font-semibold">Hours</th>
+                      <th className="py-3 px-4 font-semibold">OCC Version</th>
+                      <th className="py-3 px-4 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.04]">
+                    {filteredTasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-xs text-[#86868B]">
+                          No tasks match the active filter criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTasks.map((t) => {
+                        const status = statusBadges[t.status] || statusBadges.TODO;
+                        const priority = priorityBadges[t.priority] || priorityBadges.MEDIUM;
+
+                        return (
+                          <tr
+                            key={t.id}
+                            onClick={() => handleEditClick(t)}
+                            className="hover:bg-black/[0.02] cursor-pointer transition-colors"
+                          >
+                            <td className="py-3.5 px-4 font-mono text-[11px] text-[#007AFF] font-bold">
+                              {t.id}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="font-semibold text-xs text-[#1D1D1F]">{t.title}</div>
+                              {t.description && (
+                                <div className="text-[11px] text-[#86868B] truncate max-w-md">{t.description}</div>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-medium ${status.class}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></span>
+                                <span>{status.label}</span>
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-medium ${priority.class}`}>
+                                {priority.label}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 font-mono text-[11px] text-[#1D1D1F]">
+                              {t.actualHours || 0} / {t.estimatedHours}h
+                            </td>
+                            <td className="py-3.5 px-4 font-mono text-[10px] text-purple-700 font-semibold">
+                              v{t.version}
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditClick(t);
+                                }}
+                                className="px-2.5 py-1 text-xs text-[#007AFF] hover:bg-blue-50 rounded-[6px] transition-colors font-medium"
+                              >
+                                View Details →
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Create Task Modal Sheet */}
           {isCreateModalOpen && (
@@ -360,7 +697,7 @@ export default function TasksPage() {
                       <select
                         value={newProjectId}
                         onChange={(e) => setNewProjectId(e.target.value)}
-                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none bg-white font-medium"
                       >
                         {projects.map((p) => (
                           <option key={p.id} value={p.id}>
@@ -377,7 +714,7 @@ export default function TasksPage() {
                       <select
                         value={newStatus}
                         onChange={(e) => setNewStatus(e.target.value as TaskStatus)}
-                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none bg-white font-medium"
                       >
                         <option value="TODO">To Do</option>
                         <option value="IN_PROGRESS">In Progress</option>
@@ -394,7 +731,7 @@ export default function TasksPage() {
                       <select
                         value={newPriority}
                         onChange={(e) => setNewPriority(e.target.value as TaskPriority)}
-                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none bg-white font-medium"
                       >
                         <option value="LOW">Low</option>
                         <option value="MEDIUM">Medium</option>
@@ -424,18 +761,18 @@ export default function TasksPage() {
                     </label>
                     <textarea
                       rows={3}
-                      placeholder="Brief details of acceptance criteria..."
+                      placeholder="Technical scope, idempotency constraints, or acceptance criteria..."
                       value={newDescription}
                       onChange={(e) => setNewDescription(e.target.value)}
                       className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
                     ></textarea>
                   </div>
 
-                  <div className="flex items-center justify-end space-x-2.5 pt-3 border-t border-black/[0.08]">
+                  <div className="pt-2 flex justify-end space-x-2">
                     <button
                       type="button"
                       onClick={() => setIsCreateModalOpen(false)}
-                      className="px-3.5 py-1.5 text-xs text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-black/[0.04] rounded-[8px] transition-colors"
+                      className="px-3.5 py-1.5 text-xs text-[#6E6E73] hover:text-[#1D1D1F] rounded-[8px] font-medium"
                     >
                       Cancel
                     </button>
@@ -444,7 +781,7 @@ export default function TasksPage() {
                       disabled={isCreating}
                       className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
                     >
-                      {isCreating ? 'Creating Task...' : 'Create Task (v1)'}
+                      {isCreating ? 'Creating Task...' : 'Create Task'}
                     </button>
                   </div>
                 </form>
@@ -456,7 +793,11 @@ export default function TasksPage() {
           <ConflictResolutionModal
             conflict={conflict}
             onClose={() => setConflict(null)}
-            onReloadLatest={handleReloadLatest}
+            onReloadLatest={() => {
+              setConflict(null);
+              loadInitialData();
+              showToast('Authoritative server state reloaded.');
+            }}
           />
         </main>
       </div>

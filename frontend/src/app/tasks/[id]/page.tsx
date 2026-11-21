@@ -21,7 +21,7 @@ const priorityBadges: Record<TaskPriority, { label: string; class: string }> = {
   LOW: { label: 'Low Priority', class: 'bg-blue-50 text-blue-700 border-blue-200' },
   MEDIUM: { label: 'Medium Priority', class: 'bg-amber-50 text-amber-700 border-amber-200' },
   HIGH: { label: 'High Priority', class: 'bg-rose-50 text-rose-700 border-rose-200' },
-  URGENT: { label: 'P0 Critical Priority', class: 'bg-red-100 text-red-800 border-red-300 font-bold' },
+  URGENT: { label: 'P0 Critical', class: 'bg-red-100 text-red-800 border-red-300 font-bold' },
 };
 
 const actionBadges: Record<string, { label: string; class: string; icon: string }> = {
@@ -47,6 +47,9 @@ export default function TaskDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Segmented Tab State to reduce screen repetition (PRD UI Requirement)
+  const [activeTab, setActiveTab] = useState<'overview' | 'subtasks' | 'discussion' | 'worklog' | 'audit'>('overview');
 
   // Editable task form fields
   const [title, setTitle] = useState('');
@@ -106,53 +109,6 @@ export default function TaskDetailPage() {
     setIsLoading(false);
   };
 
-  const handleToggleSubtask = async (subtaskId: string) => {
-    setSubtasks((prev) =>
-      prev.map((s) => (s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s))
-    );
-    await ApiClient.toggleSubtask(taskId, subtaskId);
-  };
-
-  const handleAddSubtask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubtaskTitle.trim()) return;
-    setIsAddingSubtask(true);
-    const res = await ApiClient.createSubtask(taskId, newSubtaskTitle.trim());
-    setIsAddingSubtask(false);
-    if (res.success && res.subtask) {
-      setSubtasks((prev) => [...prev, res.subtask!]);
-      setNewSubtaskTitle('');
-      showToast('Subtask created');
-    }
-  };
-
-  const handleDeleteSubtask = async (subtaskId: string) => {
-    setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
-    await ApiClient.deleteSubtask(taskId, subtaskId);
-    showToast('Subtask deleted');
-  };
-
-  const handlePostComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCommentContent.trim()) return;
-    setIsPostingComment(true);
-    const res = await ApiClient.createComment(taskId, newCommentContent.trim());
-    setIsPostingComment(false);
-    if (res.success && res.comment) {
-      setComments((prev) => [...prev, res.comment!]);
-      setNewCommentContent('');
-      showToast('Comment posted');
-      const updatedLogs = await ApiClient.getTaskActivity(taskId);
-      setActivityLogs(updatedLogs);
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
-    await ApiClient.deleteComment(taskId, commentId);
-    showToast('Comment deleted');
-  };
-
   const showToast = (message: string) => {
     setNotification(message);
     setTimeout(() => {
@@ -181,14 +137,62 @@ export default function TaskDetailPage() {
       setConflict(res.conflict);
     } else if (res.task) {
       setTask(res.task);
-      showToast(`Task saved successfully as Version ${res.task.version}`);
-      // Refresh audit logs
+      showToast(`Saved as Version ${res.task.version}`);
       const updatedLogs = await ApiClient.getTaskActivity(task.id);
       setActivityLogs(updatedLogs);
     }
   };
 
-  // Submit Work Log & Progress
+  // Subtask handlers
+  const handleToggleSubtask = async (subtaskId: string) => {
+    setSubtasks((prev) =>
+      prev.map((s) => (s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s))
+    );
+    await ApiClient.toggleSubtask(taskId, subtaskId);
+  };
+
+  const handleAddSubtask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim()) return;
+    setIsAddingSubtask(true);
+    const res = await ApiClient.createSubtask(taskId, newSubtaskTitle.trim());
+    setIsAddingSubtask(false);
+    if (res.success && res.subtask) {
+      setSubtasks((prev) => [...prev, res.subtask!]);
+      setNewSubtaskTitle('');
+      showToast('Subtask created');
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
+    await ApiClient.deleteSubtask(taskId, subtaskId);
+    showToast('Subtask deleted');
+  };
+
+  // Comment handlers
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentContent.trim()) return;
+    setIsPostingComment(true);
+    const res = await ApiClient.createComment(taskId, newCommentContent.trim());
+    setIsPostingComment(false);
+    if (res.success && res.comment) {
+      setComments((prev) => [...prev, res.comment!]);
+      setNewCommentContent('');
+      showToast('Comment posted');
+      const updatedLogs = await ApiClient.getTaskActivity(taskId);
+      setActivityLogs(updatedLogs);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    await ApiClient.deleteComment(taskId, commentId);
+    showToast('Comment deleted');
+  };
+
+  // Work log submission
   const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!task || !workNote.trim()) return;
@@ -210,11 +214,11 @@ export default function TaskDetailPage() {
       if (res.log) {
         setActivityLogs((prev) => [res.log!, ...prev]);
       }
-      showToast('Work submission logged and added to task audit history');
+      showToast('Work submission logged in audit trail');
     }
   };
 
-  // Simulate OCC race condition (409)
+  // Simulate OCC conflict
   const handleSimulateConflict = async () => {
     if (!task) return;
     const staleVersion = Math.max(0, task.version - 1);
@@ -245,7 +249,6 @@ export default function TaskDetailPage() {
       return d.toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
       });
@@ -261,32 +264,36 @@ export default function TaskDetailPage() {
       <div className="flex-1 flex flex-col overflow-y-auto">
         <Topbar />
 
-        <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
-          {/* Top Breadcrumb & Action Row */}
+        <main className="p-6 sm:p-8 max-w-6xl w-full mx-auto space-y-6">
+          {/* Breadcrumb Navigation & Top Action Controls */}
           <div className="flex items-center justify-between flex-wrap gap-4 pb-1">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2.5">
               <Link
                 href={returnTo}
-                className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-[8px] bg-white border border-black/[0.08] text-xs font-semibold text-[#1D1D1F] hover:bg-black/[0.04] transition-all shadow-xs"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-[8px] bg-white border border-black/[0.08] text-xs font-semibold text-[#1D1D1F] hover:bg-black/[0.04] transition-all shadow-xs"
               >
                 <span>←</span>
-                <span>Back to {returnTo === '/projects' ? 'Projects' : 'Tasks Board'}</span>
+                <span>{returnTo === '/projects' ? 'Projects' : 'Tasks'}</span>
               </Link>
               <span className="text-[#86868B] text-xs">/</span>
-              <span className="text-xs font-medium text-[#86868B]">Workspace</span>
-              <span className="text-[#86868B] text-xs">/</span>
-              <span className="text-xs font-semibold text-[#1D1D1F] font-mono">{taskId}</span>
+              <span className="text-xs font-mono font-semibold text-[#1D1D1F]">{taskId}</span>
+              {project && (
+                <>
+                  <span className="text-[#86868B] text-xs">•</span>
+                  <span className="text-xs text-[#6E6E73]">{project.name}</span>
+                </>
+              )}
             </div>
 
-            <div className="flex items-center space-x-2.5">
+            <div className="flex items-center space-x-2">
               <button
                 type="button"
                 onClick={handleSimulateConflict}
-                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-[8px] text-xs font-semibold transition-colors active:scale-[0.98] shadow-xs flex items-center space-x-1.5"
-                title="Test Concurrency Protection: Trigger a 409 Conflict"
+                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-[8px] text-xs font-semibold transition-colors active:scale-[0.98] shadow-xs flex items-center space-x-1"
+                title="Test Optimistic Concurrency Control"
               >
                 <span>⚡</span>
-                <span>Simulate Race (409)</span>
+                <span>Test Race (409)</span>
               </button>
 
               <button
@@ -294,7 +301,7 @@ export default function TaskDetailPage() {
                 onClick={handleDeleteTask}
                 className="px-3 py-1.5 text-xs text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-[8px] transition-colors font-medium border border-transparent hover:border-rose-200"
               >
-                Delete Task
+                Delete
               </button>
 
               <button
@@ -310,7 +317,7 @@ export default function TaskDetailPage() {
 
           {/* Toast Notification */}
           {notification && (
-            <div className="p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-[10px] text-xs text-emerald-900 flex justify-between items-center shadow-xs animate-in fade-in">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-[10px] text-xs text-emerald-900 flex justify-between items-center shadow-xs animate-in fade-in">
               <div className="flex items-center space-x-2">
                 <span>✓</span>
                 <span className="font-medium">{notification}</span>
@@ -327,102 +334,115 @@ export default function TaskDetailPage() {
           {isLoading ? (
             <div className="bg-white rounded-2xl p-12 border border-black/[0.08] text-center text-[#86868B] space-y-2">
               <div className="w-6 h-6 border-2 border-[#007AFF] border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-xs">Loading task details and audit trail...</p>
+              <p className="text-xs">Loading task details...</p>
             </div>
           ) : !task ? (
             <div className="bg-white rounded-2xl p-12 border border-black/[0.08] text-center space-y-3">
               <h3 className="text-base font-semibold text-[#1D1D1F]">Task Not Found</h3>
-              <p className="text-xs text-[#6E6E73]">
-                Task {taskId} does not exist or has been deleted from this organization.
-              </p>
-              <Link
-                href={returnTo}
-                className="inline-block px-4 py-2 bg-[#007AFF] text-white rounded-[8px] text-xs font-semibold"
-              >
+              <p className="text-xs text-[#6E6E73]">Task {taskId} does not exist in current workspace.</p>
+              <Link href={returnTo} className="inline-block px-4 py-2 bg-[#007AFF] text-white rounded-[8px] text-xs font-semibold">
                 Return to Tasks
               </Link>
             </div>
           ) : (
             <>
-              {/* Task Hero Header Banner */}
+              {/* Task Title & Status Banner */}
               <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
-                {/* Meta Badges Row */}
                 <div className="flex items-center justify-between flex-wrap gap-2.5">
-                  <div className="flex items-center space-x-2 flex-wrap gap-y-1.5">
-                    <span className="text-xs font-mono font-bold text-[#007AFF] bg-blue-50 px-2.5 py-1 rounded border border-blue-200/70">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                    <span className="text-xs font-mono font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                       {task.id}
                     </span>
-                    <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-purple-50 text-purple-700 border border-purple-200/80">
-                      OCC Version {task.version}
+                    <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                      OCC v{task.version}
                     </span>
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
-                        statusBadges[task.status]?.class || 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
+                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${statusBadges[task.status]?.class}`}>
                       {statusBadges[task.status]?.label || task.status}
                     </span>
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-[6px] border ${
-                        priorityBadges[task.priority]?.class || 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
+                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-[6px] border ${priorityBadges[task.priority]?.class}`}>
                       {priorityBadges[task.priority]?.label || task.priority}
                     </span>
-                    {project && (
-                      <span className="text-xs font-medium px-2.5 py-1 rounded bg-black/[0.04] text-[#1D1D1F] border border-black/[0.08]">
-                        Project: {project.name}
-                      </span>
-                    )}
                   </div>
 
-                  <div className="text-[11px] text-[#86868B] font-mono">
-                    Tenant: <strong className="text-[#007AFF]">{task.orgId}</strong>
+                  <div className="text-xs text-[#86868B]">
+                    Created by <strong>{task.creatorId || 'usr-pm-1'}</strong> • {formatDate(task.createdAt)}
                   </div>
                 </div>
 
-                {/* Main Editable Title */}
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">
-                    Task Title
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="text-2xl font-bold text-[#1D1D1F] tracking-tight w-full bg-transparent border-b border-black/[0.08] focus:border-[#007AFF] pb-1 outline-none transition-colors"
-                  />
-                </div>
+                {/* Editable Task Title Input */}
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Task Title"
+                  className="text-xl sm:text-2xl font-bold text-[#1D1D1F] tracking-tight w-full bg-transparent border-b border-black/[0.08] focus:border-[#007AFF] pb-1 outline-none transition-colors"
+                />
 
-                {/* Meta Subtitle Details */}
-                <div className="flex items-center space-x-4 text-xs text-[#6E6E73] pt-1 border-t border-black/[0.04] flex-wrap gap-y-1">
-                  <span>Created: <strong className="text-[#1D1D1F]">{formatDate(task.createdAt)}</strong></span>
-                  <span>•</span>
-                  <span>Last Modified: <strong className="text-[#1D1D1F]">{formatDate(task.updatedAt)}</strong></span>
-                  <span>•</span>
-                  <span>Author / Creator: <strong className="text-[#1D1D1F]">{task.creatorId || 'usr-pm-1'}</strong></span>
+                {/* Sleek Segmented Tab Switcher (Reduces clutter & repetition) */}
+                <div className="flex bg-[#F5F5F7] p-1 rounded-[10px] border border-black/[0.06] text-xs font-medium max-w-2xl">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`flex-1 py-1.5 rounded-[7px] transition-all flex items-center justify-center space-x-1.5 ${
+                      activeTab === 'overview'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                    }`}
+                  >
+                    <span>📋</span>
+                    <span>Overview &amp; Subtasks ({subtasks.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('discussion')}
+                    className={`flex-1 py-1.5 rounded-[7px] transition-all flex items-center justify-center space-x-1.5 ${
+                      activeTab === 'discussion'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                    }`}
+                  >
+                    <span>💬</span>
+                    <span>Discussion ({comments.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('worklog')}
+                    className={`flex-1 py-1.5 rounded-[7px] transition-all flex items-center justify-center space-x-1.5 ${
+                      activeTab === 'worklog'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                    }`}
+                  >
+                    <span>📝</span>
+                    <span>Submit Work</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('audit')}
+                    className={`flex-1 py-1.5 rounded-[7px] transition-all flex items-center justify-center space-x-1.5 ${
+                      activeTab === 'audit'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                        : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                    }`}
+                  >
+                    <span>⏱</span>
+                    <span>Audit ({activityLogs.length})</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Two-Column Full-Screen Content Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column (Details & Work Submission) - 7 cols */}
-                <div className="lg:col-span-7 space-y-6">
-                  {/* Task Configuration Card */}
-                  <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-5">
+              {/* ================= TAB 1: OVERVIEW & SUBTASKS ================= */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  {/* Task Scope & Attributes Card */}
+                  <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
                     <h3 className="font-semibold text-sm text-[#1D1D1F] border-b border-black/[0.06] pb-3">
-                      Task Scope & Attributes
+                      Task Scope &amp; Attributes
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                          Workflow Status
-                        </label>
+                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">Workflow Status</label>
                         <select
                           value={status}
                           onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none bg-white font-medium"
+                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs bg-white font-medium outline-none"
                         >
                           <option value="TODO">To Do</option>
                           <option value="IN_PROGRESS">In Progress</option>
@@ -433,13 +453,11 @@ export default function TaskDetailPage() {
                       </div>
 
                       <div>
-                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                          Priority Level
-                        </label>
+                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">Priority Level</label>
                         <select
                           value={priority}
                           onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none bg-white font-medium"
+                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs bg-white font-medium outline-none"
                         >
                           <option value="LOW">Low</option>
                           <option value="MEDIUM">Medium</option>
@@ -447,47 +465,33 @@ export default function TaskDetailPage() {
                           <option value="URGENT">P0 Critical</option>
                         </select>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                          Estimated Hours
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="500"
-                          value={estimatedHours}
-                          onChange={(e) => setEstimatedHours(Number(e.target.value))}
-                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none font-medium"
-                        />
-                      </div>
 
                       <div>
-                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                          Actual Hours Logged
-                        </label>
-                        <div className="px-3 py-2 bg-black/[0.03] border border-black/[0.08] rounded-[8px] text-xs font-mono font-semibold text-[#1D1D1F] flex items-center justify-between">
-                          <span>{task.actualHours || 0} hrs</span>
-                          <span className="text-[11px] text-[#86868B]">
-                            {Math.round(((task.actualHours || 0) / (task.estimatedHours || 1)) * 100)}% of est
-                          </span>
+                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">Hours (Logged / Est)</label>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="200"
+                            value={estimatedHours}
+                            onChange={(e) => setEstimatedHours(Number(e.target.value))}
+                            className="w-1/2 px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs font-medium outline-none"
+                            title="Estimated Hours"
+                          />
+                          <span className="text-xs text-[#86868B] font-mono">{task.actualHours || 0}h logged</span>
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                        Description & Acceptance Criteria
-                      </label>
+                      <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">Description &amp; Acceptance Criteria</label>
                       <textarea
-                        rows={5}
+                        rows={4}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Detail the technical specifications, acceptance criteria, or architectural requirements..."
-                        className="w-full px-3.5 py-2.5 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none leading-relaxed"
-                      ></textarea>
+                        placeholder="Detail technical requirements, API contracts, or testing criteria..."
+                        className="w-full px-3.5 py-2.5 border border-black/[0.12] rounded-[8px] text-xs outline-none leading-relaxed"
+                      />
                     </div>
                   </div>
 
@@ -497,14 +501,14 @@ export default function TaskDetailPage() {
                       <div>
                         <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
                           <span>☑️</span>
-                          <span>Subtasks & Acceptance Criteria</span>
+                          <span>Subtasks &amp; Deliverables</span>
                         </h3>
                         <p className="text-[11px] text-[#6E6E73] mt-0.5">
-                          Break down requirements into actionable team checkpoints
+                          Actionable team milestones for this task
                         </p>
                       </div>
-                      <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-blue-50 text-[#007AFF] border border-blue-200/60 font-semibold">
-                        {subtasks.filter((s) => s.isCompleted).length} of {subtasks.length} completed
+                      <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-blue-50 text-[#007AFF] border border-blue-200 font-semibold">
+                        {subtasks.filter((s) => s.isCompleted).length} of {subtasks.length} done
                       </span>
                     </div>
 
@@ -543,11 +547,7 @@ export default function TaskDetailPage() {
                                 onChange={() => handleToggleSubtask(sub.id)}
                                 className="w-4 h-4 rounded text-[#007AFF] border-black/[0.2] focus:ring-[#007AFF]/25 cursor-pointer"
                               />
-                              <span
-                                className={`text-xs font-medium leading-relaxed ${
-                                  sub.isCompleted ? 'line-through text-[#86868B]' : 'text-[#1D1D1F]'
-                                }`}
-                              >
+                              <span className={`text-xs font-medium leading-relaxed ${sub.isCompleted ? 'line-through text-[#86868B]' : 'text-[#1D1D1F]'}`}>
                                 {sub.title}
                               </span>
                             </label>
@@ -564,14 +564,14 @@ export default function TaskDetailPage() {
                       )}
                     </div>
 
-                    {/* Add Subtask Inline Form */}
+                    {/* Add Subtask Form */}
                     <form onSubmit={handleAddSubtask} className="flex items-center space-x-2 pt-2">
                       <input
                         type="text"
                         value={newSubtaskTitle}
                         onChange={(e) => setNewSubtaskTitle(e.target.value)}
                         placeholder="Add a new subtask..."
-                        className="flex-1 px-3 py-1.5 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none"
+                        className="flex-1 px-3 py-1.5 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 outline-none"
                       />
                       <button
                         type="submit"
@@ -582,288 +582,239 @@ export default function TaskDetailPage() {
                       </button>
                     </form>
                   </div>
+                </div>
+              )}
 
-                  {/* Work Submission & Delivery Form Card */}
-                  <form
-                    onSubmit={handleSubmitWork}
-                    className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4"
-                  >
-                    <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
-                      <div>
-                        <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
-                          <span>📝</span>
-                          <span>Submit Work Progress / Delivery Log</span>
-                        </h3>
-                        <p className="text-[11px] text-[#6E6E73] mt-0.5">
-                          Appends an immutable audit entry and updates task execution status
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-mono text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 font-semibold">
-                        Live Audit Trail
-                      </span>
-                    </div>
-
+              {/* ================= TAB 2: TEAM DISCUSSION ================= */}
+              {activeTab === 'discussion' && (
+                <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
                     <div>
-                      <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                        Work Summary / Delivery Notes *
-                      </label>
-                      <textarea
-                        rows={3}
-                        required
-                        placeholder="e.g. Completed unit tests with 100% pass rate, deployed migration to Supabase, ready for review..."
-                        value={workNote}
-                        onChange={(e) => setWorkNote(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none leading-relaxed"
-                      ></textarea>
+                      <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
+                        <span>💬</span>
+                        <span>Team Discussion &amp; Code Review</span>
+                      </h3>
+                      <p className="text-[11px] text-[#6E6E73] mt-0.5">
+                        Real-time commentary with audit logging
+                      </p>
                     </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+                      {comments.length} comments
+                    </span>
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                          Update Workflow Status
-                        </label>
-                        <select
-                          value={workStatus}
-                          onChange={(e) => setWorkStatus(e.target.value as TaskStatus)}
-                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs bg-white font-medium"
-                        >
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="IN_REVIEW">In Review</option>
-                          <option value="DONE">Completed</option>
-                        </select>
-                      </div>
+                  <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                    {comments.length === 0 ? (
+                      <p className="text-xs text-[#86868B] py-6 text-center">No discussion yet. Start the conversation below.</p>
+                    ) : (
+                      comments.map((c) => {
+                        const initials = (c.authorName || 'TM')
+                          .split(' ')
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase();
 
-                      <div>
-                        <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
-                          Hours Spent on this Submission
-                        </label>
-                        <input
-                          type="number"
-                          min="0.5"
-                          step="0.5"
-                          max="100"
-                          value={workHours}
-                          onChange={(e) => setWorkHours(Number(e.target.value))}
-                          className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs font-medium"
-                        />
-                      </div>
-                    </div>
+                        return (
+                          <div key={c.id} className="p-3.5 bg-[#FBFBFD] border border-black/[0.06] rounded-xl space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-6 h-6 rounded-full bg-[#007AFF] text-white flex items-center justify-center font-bold text-[10px]">
+                                  {initials}
+                                </div>
+                                <span className="font-semibold text-xs text-[#1D1D1F]">{c.authorName}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 text-[10px] text-[#86868B]">
+                                <span>{formatDate(c.createdAt)}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteComment(c.id)}
+                                  className="hover:text-rose-600 transition-colors"
+                                  title="Delete comment"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-[#2C2C2E] leading-relaxed pl-8">
+                              {c.content}
+                            </p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
 
-                    <div className="pt-2 flex justify-end">
+                  <form onSubmit={handlePostComment} className="space-y-2 pt-2 border-t border-black/[0.04]">
+                    <textarea
+                      rows={3}
+                      value={newCommentContent}
+                      onChange={(e) => setNewCommentContent(e.target.value)}
+                      placeholder="Add feedback, update notes, or architectural decisions..."
+                      className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 outline-none leading-relaxed"
+                    />
+                    <div className="flex justify-end">
                       <button
                         type="submit"
-                        disabled={isSubmittingWork}
-                        className="px-4 py-2 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all flex items-center space-x-1.5"
+                        disabled={isPostingComment || !newCommentContent.trim()}
+                        className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] disabled:opacity-50 text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
                       >
-                        <span>{isSubmittingWork ? 'Submitting Work...' : 'Submit Work Update →'}</span>
+                        {isPostingComment ? 'Posting...' : 'Post Comment'}
                       </button>
                     </div>
                   </form>
                 </div>
+              )}
 
-                {/* Right Column (Activity History & Submission Timeline) - 5 cols */}
-                <div className="lg:col-span-5 space-y-6">
-                  {/* Team Comments Discussion Thread Card */}
-                  <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
-                    <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
-                      <div>
-                        <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
-                          <span>💬</span>
-                          <span>Team Discussion & Comments</span>
-                        </h3>
-                        <p className="text-[11px] text-[#6E6E73] mt-0.5">
-                          Collaborate, leave code review notes, and discuss delivery
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 font-semibold">
-                        {comments.length} comments
-                      </span>
+              {/* ================= TAB 3: WORK DELIVERY ================= */}
+              {activeTab === 'worklog' && (
+                <form
+                  onSubmit={handleSubmitWork}
+                  className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
+                    <div>
+                      <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
+                        <span>📝</span>
+                        <span>Submit Work Progress / Delivery Log</span>
+                      </h3>
+                      <p className="text-[11px] text-[#6E6E73] mt-0.5">
+                        Appends an immutable audit entry and updates task execution status
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-semibold">
+                      Live Audit Log
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">
+                      Work Summary / Delivery Notes *
+                    </label>
+                    <textarea
+                      rows={4}
+                      required
+                      placeholder="e.g. Implemented unit tests with 100% pass rate, deployed migration to Supabase, ready for review..."
+                      value={workNote}
+                      onChange={(e) => setWorkNote(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 outline-none leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">Update Workflow Status</label>
+                      <select
+                        value={workStatus}
+                        onChange={(e) => setWorkStatus(e.target.value as TaskStatus)}
+                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs bg-white font-medium outline-none"
+                      >
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="IN_REVIEW">In Review</option>
+                        <option value="DONE">Completed</option>
+                      </select>
                     </div>
 
-                    {/* Comments List */}
-                    <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                      {comments.length === 0 ? (
-                        <p className="text-xs text-[#86868B] py-3 text-center">No discussion yet. Start the conversation below.</p>
-                      ) : (
-                        comments.map((c) => {
-                          const initials = (c.authorName || 'TM')
-                            .split(' ')
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join('')
-                            .toUpperCase();
-
-                          return (
-                            <div key={c.id} className="p-3 bg-[#FBFBFD] border border-black/[0.06] rounded-[12px] space-y-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-6 h-6 rounded-full bg-[#007AFF] text-white flex items-center justify-center font-bold text-[10px]">
-                                    {initials}
-                                  </div>
-                                  <span className="font-semibold text-xs text-[#1D1D1F]">{c.authorName}</span>
-                                </div>
-                                <div className="flex items-center space-x-2 text-[10px] text-[#86868B]">
-                                  <span>{formatDate(c.createdAt)}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteComment(c.id)}
-                                    className="hover:text-rose-600 transition-colors"
-                                    title="Delete comment"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="text-xs text-[#2C2C2E] leading-relaxed pl-8">
-                                {c.content}
-                              </p>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    {/* Add Comment Form */}
-                    <form onSubmit={handlePostComment} className="space-y-2 pt-2 border-t border-black/[0.04]">
-                      <textarea
-                        rows={2}
-                        value={newCommentContent}
-                        onChange={(e) => setNewCommentContent(e.target.value)}
-                        placeholder="Add a comment or code review note..."
-                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs focus:ring-2 focus:ring-[#007AFF]/25 focus:border-[#007AFF] outline-none leading-relaxed"
+                    <div>
+                      <label className="font-semibold text-xs text-[#1D1D1F] block mb-1.5">Hours Spent on this Submission</label>
+                      <input
+                        type="number"
+                        min="0.5"
+                        step="0.5"
+                        max="100"
+                        value={workHours}
+                        onChange={(e) => setWorkHours(Number(e.target.value))}
+                        className="w-full px-3 py-2 border border-black/[0.12] rounded-[8px] text-xs font-medium outline-none"
                       />
-                      <div className="flex justify-end">
-                        <button
-                          type="submit"
-                          disabled={isPostingComment || !newCommentContent.trim()}
-                          className="px-3.5 py-1.5 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] disabled:opacity-50 text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
-                        >
-                          {isPostingComment ? 'Posting...' : 'Post Comment'}
-                        </button>
-                      </div>
-                    </form>
+                    </div>
                   </div>
 
-                  {/* Submission & Activity Audit Log Timeline Card */}
-                  <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
-                    <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
-                      <div>
-                        <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
-                          <span>⏱</span>
-                          <span>Submission & Activity Audit Log</span>
-                        </h3>
-                        <p className="text-[11px] text-[#6E6E73] mt-0.5">
-                          Immutable event log for task revisions & submissions
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-black/[0.06] text-[#1D1D1F] font-semibold">
-                        {activityLogs.length} events
-                      </span>
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isSubmittingWork}
+                      className="px-4 py-2 bg-[#007AFF] hover:bg-[#0062CC] active:scale-[0.98] text-white text-xs font-semibold rounded-[8px] shadow-sm transition-all"
+                    >
+                      {isSubmittingWork ? 'Submitting...' : 'Submit Work Update →'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* ================= TAB 4: AUDIT TRAIL ================= */}
+              {activeTab === 'audit' && (
+                <div className="bg-white rounded-2xl p-6 border border-black/[0.08] shadow-apple-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
+                    <div>
+                      <h3 className="font-semibold text-sm text-[#1D1D1F] flex items-center space-x-1.5">
+                        <span>⏱</span>
+                        <span>Immutable Audit Trail &amp; Concurrency History</span>
+                      </h3>
+                      <p className="text-[11px] text-[#6E6E73] mt-0.5">
+                        Chronological record of updates, submissions, and OCC events
+                      </p>
                     </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-black/[0.06] text-[#1D1D1F] font-semibold">
+                      {activityLogs.length} events
+                    </span>
+                  </div>
 
-                    {activityLogs.length === 0 ? (
-                      <div className="p-8 border border-dashed border-black/10 rounded-[12px] text-center text-[#86868B] space-y-1">
-                        <p className="text-xs font-medium">No activity logged yet.</p>
-                        <p className="text-[11px] text-[#AEAEB2]">
-                          Submitting work or editing the task will record events here.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
-                        {activityLogs.map((log) => {
-                          const badge = actionBadges[log.action] || {
-                            label: log.action,
-                            class: 'bg-slate-100 text-slate-700 border-slate-200',
-                            icon: '📌',
-                          };
+                  {activityLogs.length === 0 ? (
+                    <div className="p-8 border border-dashed border-black/10 rounded-xl text-center text-[#86868B] space-y-1">
+                      <p className="text-xs font-medium">No activity logged yet.</p>
+                      <p className="text-[11px] text-[#AEAEB2]">Submitting work or editing the task will record events here.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                      {activityLogs.map((log) => {
+                        const badge = actionBadges[log.action] || {
+                          label: log.action,
+                          class: 'bg-slate-100 text-slate-700 border-slate-200',
+                          icon: '📌',
+                        };
 
-                          return (
-                            <div
-                              key={log.id}
-                              className="p-3.5 bg-[#FBFBFD] border border-black/[0.06] rounded-[12px] shadow-xs space-y-2 hover:border-black/[0.12] transition-colors"
-                            >
-                              <div className="flex items-center justify-between text-xs">
-                                <span
-                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center space-x-1 ${badge.class}`}
-                                >
-                                  <span>{badge.icon}</span>
-                                  <span>{badge.label}</span>
-                                </span>
-                                <span className="text-[10px] font-mono text-[#86868B]">
-                                  {formatDate(log.createdAt)}
-                                </span>
-                              </div>
-
-                              <div className="text-xs text-[#1D1D1F]">
-                                {log.payload?.note ? (
-                                  <div className="p-2.5 bg-white rounded-[8px] border border-black/[0.06] text-[11px] font-medium text-[#1D1D1F] leading-relaxed">
-                                    &ldquo;{log.payload.note}&rdquo;
-                                  </div>
-                                ) : log.payload?.title ? (
-                                  <p className="text-[11px] text-[#48484A]">
-                                    {log.payload.title}
-                                  </p>
-                                ) : log.payload?.message ? (
-                                  <p className="text-[11px] text-[#48484A]">
-                                    {log.payload.message}
-                                  </p>
-                                ) : (
-                                  <p className="text-[#6E6E73] font-mono text-[10px]">
-                                    {JSON.stringify(log.payload)}
-                                  </p>
-                                )}
-                              </div>
-
-                              <div className="flex items-center justify-between text-[10px] text-[#86868B] pt-1.5 border-t border-black/[0.04]">
-                                <span>
-                                  By: <strong className="text-[#1D1D1F]">{log.performedBy}</strong>
-                                </span>
-                                <div className="flex items-center space-x-2">
-                                  {log.payload?.status && (
-                                    <span className="font-mono text-[#007AFF] font-medium">
-                                      Status: {log.payload.status}
-                                    </span>
-                                  )}
-                                  {log.payload?.version && (
-                                    <span className="font-mono text-purple-600 font-semibold">
-                                      v{log.payload.version}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                        return (
+                          <div
+                            key={log.id}
+                            className="p-3.5 bg-[#FBFBFD] border border-black/[0.06] rounded-xl shadow-xs space-y-2 hover:border-black/[0.12] transition-colors"
+                          >
+                            <div className="flex items-center justify-between text-xs">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center space-x-1 ${badge.class}`}>
+                                <span>{badge.icon}</span>
+                                <span>{badge.label}</span>
+                              </span>
+                              <span className="text-[10px] font-mono text-[#86868B]">
+                                {formatDate(log.createdAt)}
+                              </span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Architecture & Multi-Tenant Isolation Info Card */}
-                  <div className="bg-white rounded-2xl p-5 border border-black/[0.08] shadow-apple-sm space-y-3 text-xs">
-                    <h4 className="font-semibold text-xs text-[#1D1D1F] uppercase tracking-wider text-[10px] text-[#86868B]">
-                      Enterprise Tenant & Security Context
-                    </h4>
-                    <div className="space-y-1.5 text-[#48484A]">
-                      <div className="flex justify-between py-1 border-b border-black/[0.04]">
-                        <span className="text-[#86868B]">Tenant Isolation</span>
-                        <span className="font-mono text-[#007AFF] font-semibold">{task.orgId}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-black/[0.04]">
-                        <span className="text-[#86868B]">Database Cluster</span>
-                        <span className="text-emerald-700 font-medium">Supabase PostgreSQL 16</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-black/[0.04]">
-                        <span className="text-[#86868B]">Concurrency Model</span>
-                        <span className="font-mono text-purple-700 font-semibold">Optimistic Concurrency (OCC)</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="text-[#86868B]">Real-Time Sync</span>
-                        <span className="text-blue-700 font-medium">Server-Sent Events (SSE)</span>
-                      </div>
+                            <div className="text-xs text-[#1D1D1F]">
+                              {log.payload?.note ? (
+                                <div className="p-2.5 bg-white rounded-[8px] border border-black/[0.06] text-[11px] font-medium text-[#1D1D1F] leading-relaxed">
+                                  &ldquo;{log.payload.note}&rdquo;
+                                </div>
+                              ) : log.payload?.title ? (
+                                <p className="text-[11px] text-[#48484A]">{log.payload.title}</p>
+                              ) : (
+                                <p className="text-[#6E6E73] font-mono text-[10px]">{JSON.stringify(log.payload)}</p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-[#86868B] pt-1.5 border-t border-black/[0.04]">
+                              <span>By: <strong className="text-[#1D1D1F]">{log.performedBy}</strong></span>
+                              {log.payload?.version && (
+                                <span className="font-mono text-purple-600 font-semibold">
+                                  v{log.payload.version}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
+              )}
             </>
           )}
 
@@ -874,7 +825,7 @@ export default function TaskDetailPage() {
             onReloadLatest={() => {
               setConflict(null);
               if (taskId) loadTaskAndActivity(taskId);
-              showToast('Authoritative server state reloaded. Silent overwrite prevented.');
+              showToast('Authoritative server state reloaded.');
             }}
           />
         </main>
