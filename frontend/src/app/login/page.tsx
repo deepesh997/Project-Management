@@ -9,7 +9,7 @@ export default function LoginPage() {
   const { login, register, validateToken, token: currentToken } = useAuth();
   const [activeTab, setActiveTab] = useState<'signin' | 'register' | 'validator'>('signin');
 
-  // Sign In Form State
+  // Sign In Form State (Defaults prefilled for convenient access)
   const [email, setEmail] = useState('owner@acme.com');
   const [password, setPassword] = useState('Password123!');
   const [showPassword, setShowPassword] = useState(false);
@@ -50,12 +50,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickPersona = async (personaEmail: string) => {
-    setEmail(personaEmail);
-    setPassword('Password123!');
-    await handleLogin(personaEmail);
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -81,99 +75,97 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col lg:flex-row">
-      {/* ================= LEFT SIDE: IMAGE & VISUAL HERO (55%) ================= */}
-      <div className="lg:w-[52%] xl:w-[55%] bg-[#0B0F19] text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+    <div className="h-screen w-screen overflow-hidden bg-[#F5F5F7] flex flex-col lg:flex-row select-none">
+      {/* ================= LEFT SIDE: IMAGE & VISUAL HERO (50%) ================= */}
+      <div className="hidden lg:flex lg:w-[50%] xl:w-[52%] h-full bg-[#0B0F19] text-white p-6 xl:p-10 flex-col justify-between relative overflow-hidden">
         {/* Subtle Ambient Glowing Gradients */}
-        <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-[#007AFF]/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-[#5856D6]/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-[-100px] left-[-100px] w-80 h-80 bg-[#007AFF]/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-[-100px] right-[-100px] w-80 h-80 bg-[#5856D6]/20 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Header / Branding */}
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center font-bold text-base shadow-lg shadow-blue-500/25 border border-white/20">
-              WS
+        <div className="relative z-10 flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/25 border border-white/20">
+            WS
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-base tracking-tight text-white">WorkSphere</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30 font-semibold">
+                Enterprise v2.0
+              </span>
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-lg tracking-tight text-white">WorkSphere</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30 font-semibold">
-                  Enterprise v2.0
-                </span>
-              </div>
-              <p className="text-xs text-[#94A3B8]">Multi-Tenant Workflow Automation Platform</p>
-            </div>
+            <p className="text-[11px] text-[#94A3B8]">Multi-Tenant Workflow Automation Platform</p>
           </div>
         </div>
 
-        {/* Center: Image Illustration & Visual Dashboard Showcase */}
-        <div className="relative z-10 my-8 space-y-6">
-          <div className="space-y-2 max-w-xl">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+        {/* Center: Hero Graphic & Value Proposition */}
+        <div className="relative z-10 my-auto py-4 space-y-4">
+          <div className="space-y-1.5">
+            <h1 className="text-xl sm:text-2xl xl:text-3xl font-extrabold tracking-tight text-white leading-tight">
               Mission-critical concurrency. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] via-[#818CF8] to-[#C084FC]">
                 Guaranteed zero overwrites.
               </span>
             </h1>
-            <p className="text-sm text-[#94A3B8] leading-relaxed">
+            <p className="text-xs text-[#94A3B8] leading-relaxed max-w-lg">
               Designed according to Apple HIG standards. Backed by PostgreSQL 16 row-level tenant isolation, Python streaming analytics, and atomic Optimistic Concurrency Control.
             </p>
           </div>
 
-          {/* Interactive SVG Hero Showcase */}
-          <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-md group hover:border-[#007AFF]/40 transition-all duration-300">
+          {/* Interactive SVG Hero Showcase Image */}
+          <div className="relative rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-md max-h-[280px] xl:max-h-[320px] flex items-center justify-center">
             <Image
               src="/auth-hero.svg"
               alt="WorkSphere Enterprise Platform Architecture"
-              width={800}
-              height={500}
+              width={750}
+              height={450}
               priority
-              className="w-full h-auto object-cover transform group-hover:scale-[1.01] transition-transform duration-500"
+              className="w-full h-auto max-h-[280px] xl:max-h-[320px] object-contain"
             />
           </div>
 
           {/* Live Feature Highlights Row */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-[12px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-1">
+          <div className="grid grid-cols-3 gap-2.5 pt-1">
+            <div className="p-2.5 rounded-[10px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-0.5">
               <div className="flex items-center space-x-1.5 text-xs text-[#38BDF8] font-semibold">
                 <span>🛡️</span>
                 <span>OCC Engine</span>
               </div>
-              <p className="text-[11px] text-[#94A3B8]">Atomic 409 conflict detection with version diffs</p>
+              <p className="text-[10px] text-[#94A3B8]">Atomic 409 conflict detection</p>
             </div>
 
-            <div className="p-3 rounded-[12px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-1">
+            <div className="p-2.5 rounded-[10px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-0.5">
               <div className="flex items-center space-x-1.5 text-xs text-[#34D399] font-semibold">
                 <span>⚡</span>
                 <span>Real-Time SSE</span>
               </div>
-              <p className="text-[11px] text-[#94A3B8]">Live broadcast stream with Redis idempotency</p>
+              <p className="text-[10px] text-[#94A3B8]">Live stream with idempotency</p>
             </div>
 
-            <div className="p-3 rounded-[12px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-1">
+            <div className="p-2.5 rounded-[10px] bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm space-y-0.5">
               <div className="flex items-center space-x-1.5 text-xs text-[#C084FC] font-semibold">
                 <span>📊</span>
                 <span>FastAPI 8000</span>
               </div>
-              <p className="text-[11px] text-[#94A3B8]">Python $O(1)$ memory streaming analytics</p>
+              <p className="text-[10px] text-[#94A3B8]">Python $O(1)$ streaming metrics</p>
             </div>
           </div>
         </div>
 
         {/* Bottom Security / Architecture Badges */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-[#64748B] pt-4 border-t border-white/10 flex-wrap gap-2">
+        <div className="relative z-10 flex items-center justify-between text-[11px] text-[#64748B] pt-3 border-t border-white/10">
           <span>Tenant Context: <strong className="text-[#E2E8F0]">org-acme-101</strong></span>
           <span>Database: <strong className="text-[#10B981]">Supabase PostgreSQL 16</strong></span>
           <span>Security: <strong className="text-[#38BDF8]">HMAC-SHA256</strong></span>
         </div>
       </div>
 
-      {/* ================= RIGHT SIDE: AUTHENTICATION FORM (45%) ================= */}
-      <div className="lg:w-[48%] xl:w-[45%] flex items-center justify-center p-6 sm:p-10 lg:p-14">
-        <div className="w-full max-w-md space-y-6">
+      {/* ================= RIGHT SIDE: AUTHENTICATION FORM (50%) ================= */}
+      <div className="w-full lg:w-[50%] xl:w-[48%] h-full flex items-center justify-center p-6 sm:p-8 xl:p-12 overflow-y-auto">
+        <div className="w-full max-w-sm space-y-5">
           {/* Header */}
           <div className="space-y-1">
-            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#007AFF] border border-blue-200/80 text-[11px] font-semibold mb-2">
+            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#007AFF] border border-blue-200/80 text-[11px] font-semibold mb-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF]"></span>
               <span>Acme Technologies Inc.</span>
             </div>
@@ -181,99 +173,36 @@ export default function LoginPage() {
               Sign In to WorkSphere
             </h2>
             <p className="text-xs text-[#6E6E73]">
-              Choose a role below for instant one-click login or enter your corporate credentials.
+              Enter your corporate credentials to access the workspace.
             </p>
-          </div>
-
-          {/* Quick One-Click Demo Role Cards */}
-          <div className="space-y-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#86868B] block">
-              ⚡ One-Click Persona Login
-            </span>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickPersona('owner@acme.com')}
-                disabled={isLoading}
-                className="p-2.5 bg-white hover:bg-purple-50/60 border border-purple-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-purple-700">Elena Vance</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">Owner</span>
-                </div>
-                <div className="text-[10px] text-[#86868B] truncate mt-0.5">owner@acme.com</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickPersona('pm@acme.com')}
-                disabled={isLoading}
-                className="p-2.5 bg-white hover:bg-blue-50/60 border border-blue-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-blue-700">Marcus Brody</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">PM</span>
-                </div>
-                <div className="text-[10px] text-[#86868B] truncate mt-0.5">pm@acme.com</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickPersona('member@acme.com')}
-                disabled={isLoading}
-                className="p-2.5 bg-white hover:bg-emerald-50/60 border border-emerald-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-emerald-700">Sarah Connor</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Dev</span>
-                </div>
-                <div className="text-[10px] text-[#86868B] truncate mt-0.5">member@acme.com</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickPersona('auditor@acme.com')}
-                disabled={isLoading}
-                className="p-2.5 bg-white hover:bg-amber-50/60 border border-amber-200 rounded-[10px] text-left transition-all active:scale-[0.98] shadow-xs group"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs text-[#1D1D1F] group-hover:text-amber-700">Arthur Pendelton</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Auditor</span>
-                </div>
-                <div className="text-[10px] text-[#86868B] truncate mt-0.5">auditor@acme.com</div>
-              </button>
-            </div>
           </div>
 
           {/* Tab Switcher */}
           <div className="flex bg-[#EBEBED] p-1 rounded-[10px] text-xs font-medium">
             <button
               onClick={() => { setActiveTab('signin'); setError(null); }}
-              className={`flex-1 py-1.5 rounded-[7px] transition-all ${
-                activeTab === 'signin'
-                  ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
-                  : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-              }`}
+              className={`flex-1 py-1.5 rounded-[7px] transition-all ${activeTab === 'signin'
+                ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                }`}
             >
               Sign In
             </button>
             <button
               onClick={() => { setActiveTab('register'); setError(null); }}
-              className={`flex-1 py-1.5 rounded-[7px] transition-all ${
-                activeTab === 'register'
-                  ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
-                  : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-              }`}
+              className={`flex-1 py-1.5 rounded-[7px] transition-all ${activeTab === 'register'
+                ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                }`}
             >
               Register
             </button>
             <button
               onClick={() => { setActiveTab('validator'); setError(null); }}
-              className={`flex-1 py-1.5 rounded-[7px] transition-all ${
-                activeTab === 'validator'
-                  ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
-                  : 'text-[#6E6E73] hover:text-[#1D1D1F]'
-              }`}
+              className={`flex-1 py-1.5 rounded-[7px] transition-all ${activeTab === 'validator'
+                ? 'bg-white text-[#1D1D1F] shadow-xs font-semibold'
+                : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                }`}
             >
               JWT Tool
             </button>
@@ -362,7 +291,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-0.5">
                 <label className="flex items-center space-x-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -456,7 +385,7 @@ export default function LoginPage() {
                   RFC 7519 JWT Token Validator
                 </label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={testToken}
                   onChange={(e) => setTestToken(e.target.value)}
                   placeholder="Paste Bearer JWT token here..."
@@ -475,7 +404,7 @@ export default function LoginPage() {
 
               {validationResult && (
                 <div
-                  className={`p-3.5 rounded-[10px] border text-xs space-y-2 animate-in fade-in ${
+                  className={`p-3 rounded-[10px] border text-xs space-y-1.5 animate-in fade-in ${
                     validationResult.valid
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
                       : 'bg-rose-50 border-rose-200 text-rose-950'
@@ -484,12 +413,12 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between font-bold">
                     <span>{validationResult.valid ? '✓ Token Verified' : '✕ Token Invalid'}</span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/[0.06]">
-                      {validationResult.valid ? 'Signature Valid' : 'Check Failed'}
+                      {validationResult.valid ? 'Valid Signature' : 'Check Failed'}
                     </span>
                   </div>
 
                   {validationResult.user && (
-                    <div className="space-y-1 pt-1 font-mono text-[10px] bg-white/70 p-2.5 rounded-[6px] border border-black/[0.04]">
+                    <div className="space-y-1 pt-1 font-mono text-[10px] bg-white/70 p-2 rounded-[6px] border border-black/[0.04]">
                       <div>Subject: <strong>{validationResult.user.id}</strong></div>
                       <div>Role: <strong className="text-purple-700">{validationResult.user.role}</strong></div>
                       <div>Tenant: <strong className="text-blue-700">{validationResult.user.orgId}</strong></div>
